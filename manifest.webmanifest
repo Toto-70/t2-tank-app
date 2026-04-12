@@ -1,6 +1,6 @@
 {
-  "name": "Tank Tracker",
-  "short_name": "Tank",
+  "name": "Jay Tank Tracker",
+  "short_name": "Jay Tank",
   "description": "Tank-App für Meilentacho mit Verbrauchs- und Reichweitenberechnung.",
   "start_url": "./",
   "display": "standalone",

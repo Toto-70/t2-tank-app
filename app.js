@@ -71,14 +71,14 @@ function handleSubmit(event) {
 }
 
 function handleReset() {
-  const confirmed = window.confirm("Wirklich alle gespeicherten Tankdaten loeschen?");
+  const confirmed = window.confirm("Wirklich alle gespeicherten Tankdaten löschen?");
   if (!confirmed) {
     return;
   }
 
   state.entries = [];
   saveState();
-  setFormMessage("Alle gespeicherten Daten wurden geloescht.");
+  setFormMessage("Alle gespeicherten Daten wurden gelöscht.");
   render();
 }
 
@@ -159,7 +159,7 @@ function renderSummary() {
   elements.estimatedRangeDetail.textContent = `${formatNumber(estimatedRangeKm, 0)} km real mit ${TANK_CAPACITY_LITERS} l`;
   elements.maxOdometer.textContent = `${formatNumber(maxOdometerMiles, 0)} mi`;
   elements.bufferedMaxOdometer.textContent = `${formatNumber(bufferedMaxOdometerMiles, 0)} mi`;
-  elements.summaryBasis.textContent = `Basis: ${formatNumber(totalDistanceKm, 0)} km aus ${totalTankEvents} Tankvorgaengen`;
+  elements.summaryBasis.textContent = `Basis: ${formatNumber(totalDistanceKm, 0)} km aus ${totalTankEvents} Tankvorgängen`;
 }
 
 function renderHistory() {
@@ -231,7 +231,7 @@ function formatTrend(interval) {
   }
 
   if (Math.abs(interval.trendPercentage) < 0.05) {
-    return "Unveraendert";
+    return "Unverändert";
   }
 
   const direction = interval.trendPercentage > 0 ? "gestiegen" : "gesunken";
@@ -279,15 +279,15 @@ function validateEntry(entry, entries) {
   }
 
   if (!Number.isFinite(entry.odometerMiles) || entry.odometerMiles < 0) {
-    return "Der Meilenstand muss eine gueltige Zahl sein.";
+    return "Der Meilenstand muss eine gültige Zahl sein.";
   }
 
   if (!entries.length) {
     if (Number.isFinite(entry.liters) && entry.liters <= 0) {
-      return "Falls du beim ersten Eintrag Liter angibst, muessen sie groesser als 0 sein.";
+      return "Falls du beim ersten Eintrag Liter angibst, müssen sie größer als 0 sein.";
     }
   } else if (!Number.isFinite(entry.liters) || entry.liters <= 0) {
-    return "Die getankten Liter muessen groesser als 0 sein.";
+    return "Die getankten Liter müssen größer als 0 sein.";
   }
 
   const highestOdometer = entries.reduce(
@@ -296,7 +296,7 @@ function validateEntry(entry, entries) {
   );
 
   if (entries.length && entry.odometerMiles <= highestOdometer) {
-    return "Der neue Meilenstand muss hoeher sein als der letzte gespeicherte.";
+    return "Der neue Meilenstand muss höher sein als der letzte gespeicherte.";
   }
 
   return "";

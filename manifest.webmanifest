@@ -1,7 +1,7 @@
 {
   "name": "Tank Tracker",
   "short_name": "Tank",
-  "description": "Tank-App fuer Meilentacho mit Verbrauchs- und Reichweitenberechnung.",
+  "description": "Tank-App für Meilentacho mit Verbrauchs- und Reichweitenberechnung.",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#f4efe4",

@@ -138,6 +138,11 @@ async function handleImportFileChange(event) {
 }
 
 function deleteEntry(entryId) {
+  const confirmed = window.confirm("Diesen Tankvorgang wirklich löschen?");
+  if (!confirmed) {
+    return;
+  }
+
   state.entries = state.entries.filter((entry) => entry.id !== entryId);
   saveState();
   render();

@@ -45,6 +45,10 @@
       </div>
 
       <p class="summary-basis" id="summary-basis">Basis wird ab zwei Volltankungen angezeigt.</p>
+      <div class="app-meta">
+        <span class="app-version" id="app-version">Version</span>
+        <button class="button button-ghost button-small" type="button" id="refresh-app" hidden>Neue Version laden</button>
+      </div>
     </section>
 
     <section class="panel panel-form">
@@ -90,7 +94,10 @@
       <div class="history-list" id="history-list" hidden></div>
 
       <div class="secondary-actions">
+        <button class="button button-secondary button-small" type="button" id="export-data">Daten exportieren</button>
+        <button class="button button-secondary button-small" type="button" id="import-data">Daten importieren</button>
         <button class="button button-secondary" type="button" id="reset-data">Alle Daten löschen</button>
+        <input id="import-file" type="file" accept="application/json" hidden>
       </div>
     </section>
   </main>

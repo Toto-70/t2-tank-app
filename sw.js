@@ -1,4 +1,4 @@
-const CACHE_NAME = "tank-tracker-v19";
+const CACHE_NAME = "tank-tracker-v20";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -28,6 +28,12 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") {
     return;
@@ -38,9 +44,10 @@ self.addEventListener("fetch", (event) => {
     event.request.mode === "navigate" ||
     requestUrl.pathname.endsWith(".html") ||
     requestUrl.pathname === "/";
+  const isSameOrigin = requestUrl.origin === self.location.origin;
 
   event.respondWith(
-    isHtmlRequest ? networkFirst(event.request) : cacheFirst(event.request),
+    isHtmlRequest || isSameOrigin ? networkFirst(event.request) : cacheFirst(event.request),
   );
 });
 

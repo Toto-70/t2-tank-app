@@ -181,6 +181,11 @@ input[type="date"] {
   padding: 9px 14px;
 }
 
+.button-small {
+  padding: 10px 14px;
+  font-size: 0.95rem;
+}
+
 .form-message {
   min-height: 1.5em;
   margin-top: 12px;
@@ -191,6 +196,8 @@ input[type="date"] {
 .secondary-actions {
   display: flex;
   justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 10px;
   margin-top: 18px;
 }
 
@@ -207,6 +214,20 @@ input[type="date"] {
   margin-top: 16px;
   color: var(--muted);
   line-height: 1.45;
+}
+
+.app-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.app-version {
+  color: var(--muted);
+  font-size: 0.9rem;
 }
 
 .stat-card {

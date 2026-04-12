@@ -1,4 +1,5 @@
 const STORAGE_KEY = "tank-tracker-state-v1";
+const APP_VERSION = "2026.04.12-1";
 const MILES_TO_KM = 1.609344;
 const TANK_CAPACITY_LITERS = 55;
 const ODOMETER_CORRECTION_FACTOR = 1.04;
@@ -10,6 +11,11 @@ const elements = {
   odometerMiles: document.getElementById("odometerMiles"),
   liters: document.getElementById("liters"),
   resetData: document.getElementById("reset-data"),
+  exportData: document.getElementById("export-data"),
+  importData: document.getElementById("import-data"),
+  importFile: document.getElementById("import-file"),
+  refreshApp: document.getElementById("refresh-app"),
+  appVersion: document.getElementById("app-version"),
   formMessage: document.getElementById("form-message"),
   historyEmpty: document.getElementById("history-empty"),
   historyList: document.getElementById("history-list"),
@@ -25,14 +31,20 @@ const elements = {
 };
 
 const state = loadState();
+let waitingServiceWorker = null;
 
 init();
 
 function init() {
   setDateFieldValue(getTodayIsoDate());
+  elements.appVersion.textContent = `Version ${APP_VERSION}`;
 
   elements.form.addEventListener("submit", handleSubmit);
   elements.resetData.addEventListener("click", handleReset);
+  elements.exportData.addEventListener("click", handleExportData);
+  elements.importData.addEventListener("click", () => elements.importFile.click());
+  elements.importFile.addEventListener("change", handleImportFileChange);
+  elements.refreshApp.addEventListener("click", handleRefreshApp);
   elements.date.addEventListener("focus", handleDateFieldActivate);
   elements.date.addEventListener("click", handleDateFieldActivate);
   elements.date.addEventListener("change", handleDateFieldChange);
@@ -82,10 +94,61 @@ function handleReset() {
   render();
 }
 
+function handleExportData() {
+  const exportPayload = {
+    app: "Jay Tank App",
+    version: APP_VERSION,
+    exportedAt: new Date().toISOString(),
+    entries: state.entries,
+  };
+
+  const blob = new Blob([JSON.stringify(exportPayload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const dateStamp = new Date().toISOString().slice(0, 10);
+
+  link.href = url;
+  link.download = `jay-tank-app-backup-${dateStamp}.json`;
+  link.click();
+
+  URL.revokeObjectURL(url);
+  setFormMessage("Datenexport erstellt.");
+}
+
+async function handleImportFileChange(event) {
+  const [file] = event.target.files || [];
+  if (!file) {
+    return;
+  }
+
+  try {
+    const content = await file.text();
+    const parsed = JSON.parse(content);
+    const importedEntries = normalizeImportedEntries(parsed.entries);
+
+    state.entries = importedEntries.sort((a, b) => a.odometerMiles - b.odometerMiles);
+    saveState();
+    render();
+    setFormMessage(`${importedEntries.length} Tankvorgänge importiert.`);
+  } catch {
+    setFormMessage("Import fehlgeschlagen. Bitte eine gültige JSON-Datei verwenden.", true);
+  } finally {
+    event.target.value = "";
+  }
+}
+
 function deleteEntry(entryId) {
   state.entries = state.entries.filter((entry) => entry.id !== entryId);
   saveState();
   render();
+}
+
+function handleRefreshApp() {
+  if (waitingServiceWorker) {
+    waitingServiceWorker.postMessage({ type: "SKIP_WAITING" });
+  } else {
+    window.location.reload();
+  }
 }
 
 function handleDateFieldActivate() {
@@ -273,7 +336,7 @@ function setLastConsumptionCardTone(interval) {
   elements.lastConsumptionCard.classList.add(consumptionClassName);
 }
 
-function validateEntry(entry, entries) {
+function validateEntry(entry, entries, isFirstEntry = entries.length === 0) {
   if (!entry.date) {
     return "Bitte ein Datum eintragen.";
   }
@@ -282,7 +345,7 @@ function validateEntry(entry, entries) {
     return "Der Meilenstand muss eine gültige Zahl sein.";
   }
 
-  if (!entries.length) {
+  if (isFirstEntry) {
     if (Number.isFinite(entry.liters) && entry.liters <= 0) {
       return "Falls du beim ersten Eintrag Liter angibst, müssen sie größer als 0 sein.";
     }
@@ -388,6 +451,44 @@ function loadState() {
   }
 }
 
+function normalizeImportedEntries(entries) {
+  if (!Array.isArray(entries)) {
+    throw new Error("Invalid import");
+  }
+
+  const normalizedEntries = entries.map((entry) => {
+    const normalizedEntry = {
+      id: typeof entry.id === "string" && entry.id ? entry.id : createEntryId(),
+      date: typeof entry.date === "string" ? entry.date : "",
+      odometerMiles: Number(entry.odometerMiles),
+      liters: entry.liters == null ? null : Number(entry.liters),
+    };
+
+    const isFirstLikeEntry = normalizedEntry.liters == null;
+    const validationMessage = validateEntry(normalizedEntry, [], isFirstLikeEntry);
+
+    if (validationMessage && validationMessage !== "Der neue Meilenstand muss höher sein als der letzte gespeicherte.") {
+      throw new Error("Invalid entry");
+    }
+
+    return normalizedEntry;
+  });
+
+  normalizedEntries.sort((a, b) => a.odometerMiles - b.odometerMiles);
+
+  for (let index = 0; index < normalizedEntries.length; index += 1) {
+    const currentEntry = normalizedEntries[index];
+    const previousEntries = normalizedEntries.slice(0, index);
+    const validationMessage = validateEntry(currentEntry, previousEntries, index === 0);
+
+    if (validationMessage) {
+      throw new Error("Invalid entry order");
+    }
+  }
+
+  return normalizedEntries;
+}
+
 function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
@@ -451,7 +552,31 @@ async function registerServiceWorker() {
   }
 
   try {
-    await navigator.serviceWorker.register("./sw.js");
+    const registration = await navigator.serviceWorker.register("./sw.js");
+    registration.update().catch(() => {});
+
+    if (registration.waiting) {
+      waitingServiceWorker = registration.waiting;
+      elements.refreshApp.hidden = false;
+    }
+
+    registration.addEventListener("updatefound", () => {
+      const installingWorker = registration.installing;
+      if (!installingWorker) {
+        return;
+      }
+
+      installingWorker.addEventListener("statechange", () => {
+        if (installingWorker.state === "installed" && navigator.serviceWorker.controller) {
+          waitingServiceWorker = registration.waiting || installingWorker;
+          elements.refreshApp.hidden = false;
+        }
+      });
+    });
+
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      window.location.reload();
+    });
   } catch {
     // No-op: app remains usable without offline cache.
   }

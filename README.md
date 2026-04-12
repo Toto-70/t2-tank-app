@@ -13,6 +13,8 @@ Kleine, lokale Web-App zum Erfassen von Volltankvorgängen mit Meilentacho.
 - Offline-Nutzung als PWA
 - Feste Annahme eines Tankvolumens von `55 l`
 - Fester Tachokorrekturfaktor von `1,04` für die reale Strecke
+- JSON-Export und JSON-Import für Datensicherung
+- Sichtbare App-Version und Update-Hinweis in der Oberfläche
 
 ## Nutzung
 

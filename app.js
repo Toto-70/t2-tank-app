@@ -29,10 +29,14 @@ const state = loadState();
 init();
 
 function init() {
-  elements.date.value = new Date().toISOString().slice(0, 10);
+  setDateFieldValue(getTodayIsoDate());
 
   elements.form.addEventListener("submit", handleSubmit);
   elements.resetData.addEventListener("click", handleReset);
+  elements.date.addEventListener("focus", handleDateFieldActivate);
+  elements.date.addEventListener("click", handleDateFieldActivate);
+  elements.date.addEventListener("change", handleDateFieldChange);
+  elements.date.addEventListener("blur", handleDateFieldBlur);
 
   render();
   registerServiceWorker();
@@ -44,7 +48,7 @@ function handleSubmit(event) {
 
   const entry = {
     id: createEntryId(),
-    date: elements.date.value,
+    date: elements.date.dataset.isoValue || "",
     odometerMiles: parseLocaleNumber(elements.odometerMiles.value),
     liters: isFirstEntry ? parseOptionalLocaleNumber(elements.liters.value) : parseLocaleNumber(elements.liters.value),
   };
@@ -60,7 +64,7 @@ function handleSubmit(event) {
   saveState();
 
   elements.form.reset();
-  elements.date.value = new Date().toISOString().slice(0, 10);
+  setDateFieldValue(getTodayIsoDate());
   updateLitersFieldState();
   setFormMessage("Volltankvorgang gespeichert.");
   render();
@@ -82,6 +86,30 @@ function deleteEntry(entryId) {
   state.entries = state.entries.filter((entry) => entry.id !== entryId);
   saveState();
   render();
+}
+
+function handleDateFieldActivate() {
+  const isoValue = elements.date.dataset.isoValue || getTodayIsoDate();
+
+  if (elements.date.type !== "date") {
+    elements.date.readOnly = false;
+    elements.date.type = "date";
+  }
+
+  elements.date.value = isoValue;
+  elements.date.showPicker?.();
+}
+
+function handleDateFieldChange() {
+  if (elements.date.type === "date" && elements.date.value) {
+    setDateFieldValue(elements.date.value);
+  }
+}
+
+function handleDateFieldBlur() {
+  if (elements.date.type === "date") {
+    setDateFieldValue(elements.date.value || elements.date.dataset.isoValue || "");
+  }
 }
 
 function render() {
@@ -280,6 +308,13 @@ function updateLitersFieldState() {
   elements.liters.placeholder = isFirstEntry ? "Beim ersten Eintrag optional" : "z. B. 42.50";
 }
 
+function setDateFieldValue(isoValue) {
+  elements.date.type = "text";
+  elements.date.readOnly = true;
+  elements.date.dataset.isoValue = isoValue || "";
+  elements.date.value = isoValue ? formatDate(isoValue) : "";
+}
+
 function getIntervals(entries) {
   const sortedEntries = [...entries].sort((a, b) => a.odometerMiles - b.odometerMiles);
   const intervals = [];
@@ -404,6 +439,10 @@ function formatDate(value) {
     month: "2-digit",
     year: "numeric",
   }).format(date);
+}
+
+function getTodayIsoDate() {
+  return new Date().toISOString().slice(0, 10);
 }
 
 async function registerServiceWorker() {

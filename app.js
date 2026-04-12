@@ -1,5 +1,5 @@
 const STORAGE_KEY = "tank-tracker-state-v1";
-const APP_VERSION = "2026.04.12-1";
+const APP_VERSION_FALLBACK = "lokal";
 const MILES_TO_KM = 1.609344;
 const TANK_CAPACITY_LITERS = 55;
 const ODOMETER_CORRECTION_FACTOR = 1.04;
@@ -32,12 +32,13 @@ const elements = {
 
 const state = loadState();
 let waitingServiceWorker = null;
+let currentAppVersion = APP_VERSION_FALLBACK;
 
 init();
 
 function init() {
   setDateFieldValue(getTodayIsoDate());
-  elements.appVersion.textContent = `Version ${APP_VERSION}`;
+  setAppVersion(APP_VERSION_FALLBACK);
 
   elements.form.addEventListener("submit", handleSubmit);
   elements.resetData.addEventListener("click", handleReset);
@@ -52,6 +53,7 @@ function init() {
 
   render();
   registerServiceWorker();
+  loadAppVersion();
 }
 
 function handleSubmit(event) {
@@ -97,7 +99,7 @@ function handleReset() {
 function handleExportData() {
   const exportPayload = {
     app: "Jay Tank App",
-    version: APP_VERSION,
+    version: currentAppVersion,
     exportedAt: new Date().toISOString(),
     entries: state.entries,
   };
@@ -177,6 +179,22 @@ function handleDateFieldChange() {
 function handleDateFieldBlur() {
   if (elements.date.type === "date") {
     setDateFieldValue(elements.date.value || elements.date.dataset.isoValue || "");
+  }
+}
+
+async function loadAppVersion() {
+  try {
+    const response = await fetch("./version.json", { cache: "no-store" });
+    if (!response.ok) {
+      return;
+    }
+
+    const versionInfo = await response.json();
+    if (typeof versionInfo.version === "string" && versionInfo.version.trim()) {
+      setAppVersion(versionInfo.version.trim());
+    }
+  } catch {
+    // No-op: fallback version remains visible for local or offline use.
   }
 }
 
@@ -381,6 +399,11 @@ function setDateFieldValue(isoValue) {
   elements.date.readOnly = true;
   elements.date.dataset.isoValue = isoValue || "";
   elements.date.value = isoValue ? formatDate(isoValue) : "";
+}
+
+function setAppVersion(version) {
+  currentAppVersion = version;
+  elements.appVersion.textContent = `Version ${version}`;
 }
 
 function getIntervals(entries) {

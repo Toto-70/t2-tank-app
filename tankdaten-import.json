@@ -1,0 +1,72 @@
+{
+  "app": "Jay Tank App",
+  "version": "2026.04.12-1",
+  "exportedAt": "2026-04-12T00:00:00.000Z",
+  "entries": [
+    {
+      "date": "2026-04-12",
+      "odometerMiles": 19814.7,
+      "liters": null
+    },
+    {
+      "date": "2026-04-12",
+      "odometerMiles": 19930.1,
+      "liters": 20.8
+    },
+    {
+      "date": "2026-04-12",
+      "odometerMiles": 20042.2,
+      "liters": 31.64
+    },
+    {
+      "date": "2026-04-12",
+      "odometerMiles": 20183.2,
+      "liters": 31.21
+    },
+    {
+      "date": "2026-04-12",
+      "odometerMiles": 20315.1,
+      "liters": 32.0
+    },
+    {
+      "date": "2026-04-12",
+      "odometerMiles": 20417.0,
+      "liters": 27.57
+    },
+    {
+      "date": "2026-04-12",
+      "odometerMiles": 20516.8,
+      "liters": 27.51
+    },
+    {
+      "date": "2026-04-12",
+      "odometerMiles": 20602.8,
+      "liters": 26.14
+    },
+    {
+      "date": "2026-04-12",
+      "odometerMiles": 20746.5,
+      "liters": 33.57
+    },
+    {
+      "date": "2026-04-12",
+      "odometerMiles": 20815.6,
+      "liters": 22.88
+    },
+    {
+      "date": "2026-04-12",
+      "odometerMiles": 20896.9,
+      "liters": 26.39
+    },
+    {
+      "date": "2026-04-12",
+      "odometerMiles": 20993.5,
+      "liters": 24.06
+    },
+    {
+      "date": "2026-04-12",
+      "odometerMiles": 21100.8,
+      "liters": 30.01
+    }
+  ]
+}

@@ -15,6 +15,7 @@ Kleine, lokale Web-App zum Erfassen von Volltankvorgängen mit Meilentacho.
 - Fester Tachokorrekturfaktor von `1,04` für die reale Strecke
 - JSON-Export und JSON-Import für Datensicherung
 - Sichtbare App-Version und Update-Hinweis in der Oberfläche
+- Build-Version aus Datum und GitHub-Actions-Run-Nummer auf GitHub Pages
 
 ## Nutzung
 

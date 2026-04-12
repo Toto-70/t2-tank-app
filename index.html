@@ -18,6 +18,7 @@
     <section class="panel">
       <div class="section-heading">
         <h2>Jay Tank App</h2>
+        <p class="tour-name" id="tour-name" hidden></p>
       </div>
 
       <div class="stats-grid" id="stats-grid">
@@ -92,6 +93,11 @@
       </div>
 
       <div class="history-list" id="history-list" hidden></div>
+
+      <label class="field management-field">
+        <span>Tour-Name</span>
+        <input id="tourNameInput" name="tourNameInput" type="text" maxlength="120" placeholder="z. B. Reise Ostern 2026">
+      </label>
 
       <div class="secondary-actions">
         <button class="button button-secondary button-small" type="button" id="export-data">Daten exportieren</button>

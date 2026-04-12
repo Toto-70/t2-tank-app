@@ -7,6 +7,8 @@ const RANGE_BUFFER_KM = 50;
 
 const elements = {
   form: document.getElementById("fuel-form"),
+  tourNameInput: document.getElementById("tourNameInput"),
+  tourName: document.getElementById("tour-name"),
   date: document.getElementById("date"),
   odometerMiles: document.getElementById("odometerMiles"),
   liters: document.getElementById("liters"),
@@ -39,6 +41,7 @@ init();
 function init() {
   setDateFieldValue(getTodayIsoDate());
   setAppVersion(APP_VERSION_FALLBACK);
+  elements.tourNameInput.value = state.tourName || "";
 
   elements.form.addEventListener("submit", handleSubmit);
   elements.resetData.addEventListener("click", handleReset);
@@ -46,6 +49,8 @@ function init() {
   elements.importData.addEventListener("click", () => elements.importFile.click());
   elements.importFile.addEventListener("change", handleImportFileChange);
   elements.refreshApp.addEventListener("click", handleRefreshApp);
+  elements.tourNameInput.addEventListener("change", handleTourNameChange);
+  elements.tourNameInput.addEventListener("blur", handleTourNameChange);
   elements.date.addEventListener("focus", handleDateFieldActivate);
   elements.date.addEventListener("click", handleDateFieldActivate);
   elements.date.addEventListener("change", handleDateFieldChange);
@@ -67,6 +72,7 @@ function handleSubmit(event) {
     liters: isFirstEntry ? parseOptionalLocaleNumber(elements.liters.value) : parseLocaleNumber(elements.liters.value),
   };
 
+  persistTourName();
   const validationMessage = validateEntry(entry, state.entries, isFirstEntry);
   if (validationMessage) {
     setFormMessage(validationMessage, true);
@@ -78,6 +84,7 @@ function handleSubmit(event) {
   saveState();
 
   elements.form.reset();
+  elements.tourNameInput.value = state.tourName || "";
   setDateFieldValue(getTodayIsoDate());
   updateLitersFieldState();
   setFormMessage("Volltankvorgang gespeichert.");
@@ -91,7 +98,9 @@ function handleReset() {
   }
 
   state.entries = [];
+  state.tourName = "";
   saveState();
+  elements.tourNameInput.value = "";
   setFormMessage("Alle gespeicherten Daten wurden gelöscht.");
   render();
 }
@@ -99,6 +108,7 @@ function handleReset() {
 function handleExportData() {
   const exportPayload = {
     app: "Jay Tank App",
+    tourName: state.tourName || "",
     version: currentAppVersion,
     exportedAt: new Date().toISOString(),
     entries: state.entries,
@@ -127,9 +137,12 @@ async function handleImportFileChange(event) {
     const content = await file.text();
     const parsed = JSON.parse(content);
     const importedEntries = normalizeImportedEntries(parsed.entries);
+    const importedTourName = typeof parsed.tourName === "string" ? parsed.tourName.trim() : "";
 
     state.entries = importedEntries.sort((a, b) => a.odometerMiles - b.odometerMiles);
+    state.tourName = importedTourName;
     saveState();
+    elements.tourNameInput.value = state.tourName || "";
     render();
     setFormMessage(`${importedEntries.length} Tankvorgänge importiert.`);
   } catch {
@@ -156,6 +169,11 @@ function handleRefreshApp() {
   } else {
     window.location.reload();
   }
+}
+
+function handleTourNameChange() {
+  persistTourName();
+  renderTourName();
 }
 
 function handleDateFieldActivate() {
@@ -200,8 +218,15 @@ async function loadAppVersion() {
 
 function render() {
   updateLitersFieldState();
+  renderTourName();
   renderSummary();
   renderHistory();
+}
+
+function renderTourName() {
+  const tourName = (state.tourName || "").trim();
+  elements.tourName.textContent = tourName;
+  elements.tourName.hidden = !tourName;
 }
 
 function renderSummary() {
@@ -467,15 +492,16 @@ function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      return { entries: [] };
+      return { tourName: "", entries: [] };
     }
 
     const parsed = JSON.parse(raw);
     return {
+      tourName: typeof parsed.tourName === "string" ? parsed.tourName : "",
       entries: Array.isArray(parsed.entries) ? parsed.entries : [],
     };
   } catch {
-    return { entries: [] };
+    return { tourName: "", entries: [] };
   }
 }
 
@@ -519,6 +545,11 @@ function normalizeImportedEntries(entries) {
 
 function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function persistTourName() {
+  state.tourName = elements.tourNameInput.value.trim();
+  saveState();
 }
 
 function createEntryId() {

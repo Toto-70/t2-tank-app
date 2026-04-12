@@ -5,6 +5,7 @@ Kleine, lokale Web-App zum Erfassen von Volltankvorgängen mit Meilentacho.
 ## Funktionen
 
 - Erfassen von Datum, Meilenstand und getankten Litern pro Volltanken
+- Optionaler Tour-Name wie `Reise Ostern 2026`
 - Beim allerersten Eintrag ist nur der Tachostand erforderlich
 - Automatische Umrechnung von Meilen nach Kilometern für die Verbrauchsberechnung
 - Anzeige von letztem Verbrauch und Durchschnittsverbrauch in `l / 100 km`

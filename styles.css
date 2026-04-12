@@ -97,6 +97,10 @@ form {
   min-width: 0;
 }
 
+.field-date {
+  overflow: hidden;
+}
+
 .field span {
   font-size: 0.95rem;
   font-weight: 600;
@@ -119,8 +123,14 @@ form {
 input[type="date"] {
   inline-size: 100%;
   min-inline-size: 0;
+  max-inline-size: 100%;
   -webkit-appearance: none;
   appearance: none;
+}
+
+#date {
+  width: calc(100% - 2px);
+  max-width: calc(100% - 2px);
 }
 
 .field input:focus {

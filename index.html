@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#103d35">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Tank Tracker">
+  <meta name="description" content="Offline-faehige Tank-App zur Berechnung von Verbrauch und Reichweite bei Meilentacho.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <title>Tank Tracker</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <section class="panel">
+      <div class="section-heading">
+        <h2>Jay Tank App</h2>
+      </div>
+
+      <div class="stats-grid" id="stats-grid">
+        <article class="stat-card soft-accent-card">
+          <span class="stat-label">Max. Meilenstand</span>
+          <strong class="stat-value" id="max-odometer">Nicht berechenbar</strong>
+        </article>
+        <article class="stat-card accent-card">
+          <span class="stat-label">Mit 50 km Puffer</span>
+          <strong class="stat-value" id="buffered-max-odometer">Nicht berechenbar</strong>
+        </article>
+        <article class="stat-card stat-card--consumption-neutral" id="last-consumption-card">
+          <span class="stat-label">Letzter Verbrauch</span>
+          <strong class="stat-value" id="last-consumption">Noch keine Daten</strong>
+        </article>
+        <article class="stat-card">
+          <span class="stat-label">Durchschnitt</span>
+          <strong class="stat-value" id="avg-consumption">Noch keine Daten</strong>
+        </article>
+        <article class="stat-card">
+          <span class="stat-label">Geschaetzte Reichweite</span>
+          <strong class="stat-value" id="estimated-range">Noch keine Daten</strong>
+          <span class="stat-hint" id="estimated-range-detail">Basierend auf 55 l Tankvolumen</span>
+        </article>
+      </div>
+
+      <p class="summary-basis" id="summary-basis">Basis wird ab zwei Volltankungen angezeigt.</p>
+    </section>
+
+    <section class="panel panel-form">
+      <div class="section-heading">
+        <h2>Neuer Volltankvorgang</h2>
+        <p>Der Literwert wird dem Verbrauch seit dem letzten Volltanken zugeordnet.</p>
+      </div>
+
+      <form id="fuel-form" novalidate>
+        <label class="field">
+          <span>Datum</span>
+          <input id="date" name="date" type="date" required>
+        </label>
+
+        <label class="field">
+          <span>Meilenstand nach dem Tanken</span>
+          <input id="odometerMiles" name="odometerMiles" type="number" inputmode="decimal" min="0" step="0.1" placeholder="z. B. 41235.6" required>
+        </label>
+
+        <label class="field">
+          <span>Getankte Liter</span>
+          <input id="liters" name="liters" type="number" inputmode="decimal" min="0.1" step="0.01" placeholder="Beim ersten Eintrag optional">
+        </label>
+
+        <div class="form-actions">
+          <button class="button button-primary" type="submit">Vorgang speichern</button>
+        </div>
+      </form>
+
+      <p id="form-message" class="form-message" aria-live="polite"></p>
+    </section>
+
+    <section class="panel">
+      <div class="section-heading">
+        <h2>Verlauf</h2>
+        <p>Jeder Eintrag repraesentiert ein Volltanken.</p>
+      </div>
+
+      <div id="history-empty" class="empty-state">
+        Noch keine Volltankvorgaenge gespeichert.
+      </div>
+
+      <div class="history-list" id="history-list" hidden></div>
+
+      <div class="secondary-actions">
+        <button class="button button-secondary" type="button" id="reset-data">Alle Daten loeschen</button>
+      </div>
+    </section>
+  </main>
+
+  <template id="history-item-template">
+    <article class="history-item">
+      <div class="history-main">
+        <div>
+          <p class="history-date"></p>
+          <h3 class="history-odometer"></h3>
+        </div>
+      </div>
+      <dl class="history-metrics"></dl>
+      <div class="history-actions">
+        <button class="button button-ghost history-delete" type="button">Loeschen</button>
+      </div>
+    </article>
+  </template>
+
+  <script src="app.js" defer></script>
+</body>
+</html>

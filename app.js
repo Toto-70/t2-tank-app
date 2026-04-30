@@ -4,6 +4,7 @@ const MILES_TO_KM = 1.609344;
 const TANK_CAPACITY_LITERS = 55;
 const ODOMETER_CORRECTION_FACTOR = 1.04;
 const RANGE_BUFFER_KM = 50;
+const FALLBACK_CONSUMPTION_L_PER_100_KM = 15;
 
 const elements = {
   form: document.getElementById("fuel-form"),
@@ -239,11 +240,21 @@ function renderSummary() {
     setLastConsumptionCardTone(null);
     elements.lastConsumption.textContent = "Noch keine Daten";
     elements.avgConsumption.textContent = "Noch keine Daten";
-    elements.estimatedRange.textContent = "Noch keine Daten";
-    elements.estimatedRangeDetail.textContent = "Es fehlen mindestens zwei Volltankungen";
-    elements.maxOdometer.textContent = "Nicht berechenbar";
-    elements.bufferedMaxOdometer.textContent = "Nicht berechenbar";
-    elements.summaryBasis.textContent = "Basis wird ab zwei Volltankungen angezeigt.";
+
+    if (latestEntry) {
+      renderRangeEstimate(latestEntry, FALLBACK_CONSUMPTION_L_PER_100_KM / 100);
+      elements.estimatedRangeDetail.textContent =
+        `Fallback mit ${formatNumber(FALLBACK_CONSUMPTION_L_PER_100_KM, 0)} l / 100 km und ${TANK_CAPACITY_LITERS} l`;
+      elements.summaryBasis.textContent =
+        `Fallback: ${formatNumber(FALLBACK_CONSUMPTION_L_PER_100_KM, 0)} l / 100 km bis zur zweiten Volltankung.`;
+    } else {
+      elements.estimatedRange.textContent = "Noch keine Daten";
+      elements.estimatedRangeDetail.textContent = "Es fehlen mindestens zwei Volltankungen";
+      elements.maxOdometer.textContent = "Nicht berechenbar";
+      elements.bufferedMaxOdometer.textContent = "Nicht berechenbar";
+      elements.summaryBasis.textContent = "Basis wird ab zwei Volltankungen angezeigt.";
+    }
+
     return;
   }
 
@@ -258,7 +269,13 @@ function renderSummary() {
 
   elements.avgConsumption.textContent = `${formatNumber(avgLPer100Km, 2)} l / 100 km`;
 
-  const estimatedRangeKm = TANK_CAPACITY_LITERS / avgConsumptionLPerKm;
+  const estimatedRangeKm = renderRangeEstimate(latestEntry, avgConsumptionLPerKm);
+  elements.estimatedRangeDetail.textContent = `${formatNumber(estimatedRangeKm, 0)} km real mit ${TANK_CAPACITY_LITERS} l`;
+  elements.summaryBasis.textContent = `Basis: ${formatNumber(totalDistanceKm, 0)} km aus ${totalTankEvents} Tankvorgängen`;
+}
+
+function renderRangeEstimate(latestEntry, consumptionLPerKm) {
+  const estimatedRangeKm = TANK_CAPACITY_LITERS / consumptionLPerKm;
   const estimatedRangeActualMiles = estimatedRangeKm / MILES_TO_KM;
   const estimatedRangeDisplayedMiles = estimatedRangeActualMiles / ODOMETER_CORRECTION_FACTOR;
   const bufferedRangeKm = Math.max(0, estimatedRangeKm - RANGE_BUFFER_KM);
@@ -267,10 +284,10 @@ function renderSummary() {
   const bufferedMaxOdometerMiles = latestEntry.odometerMiles + bufferedRangeDisplayedMiles;
 
   elements.estimatedRange.textContent = `${formatNumber(estimatedRangeActualMiles, 0)} mi`;
-  elements.estimatedRangeDetail.textContent = `${formatNumber(estimatedRangeKm, 0)} km real mit ${TANK_CAPACITY_LITERS} l`;
   elements.maxOdometer.textContent = `${formatNumber(maxOdometerMiles, 0)} mi`;
   elements.bufferedMaxOdometer.textContent = `${formatNumber(bufferedMaxOdometerMiles, 0)} mi`;
-  elements.summaryBasis.textContent = `Basis: ${formatNumber(totalDistanceKm, 0)} km aus ${totalTankEvents} Tankvorgängen`;
+
+  return estimatedRangeKm;
 }
 
 function renderHistory() {

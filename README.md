@@ -10,6 +10,7 @@ Kleine, lokale Web-App zum Erfassen von Volltankvorgängen mit Meilentacho.
 - Automatische Umrechnung von Meilen nach Kilometern für die Verbrauchsberechnung
 - Anzeige von letztem Verbrauch und Durchschnittsverbrauch in `l / 100 km`
 - Berechnung der geschätzten Reichweite und des maximalen Meilenstands nach dem Tanken
+- Fallback-Verbrauch von `15 l / 100 km` für die Reichweitenberechnung nach dem ersten Eintrag
 - Lokale Speicherung im Browser via `localStorage`
 - Offline-Nutzung als PWA
 - Feste Annahme eines Tankvolumens von `55 l`
@@ -39,6 +40,8 @@ Die App-Daten bleiben weiterhin lokal auf dem jeweiligen iPhone im Browser bzw. 
 ## Wichtige Annahme
 
 Die Reichweitenberechnung arbeitet fest mit einem Tankvolumen von `55 l`.
+
+Solange erst ein Volltankvorgang gespeichert ist, verwendet die App dafür einen Fallback-Verbrauch von `15 l / 100 km`. Ab der zweiten Volltankung wird der echte Durchschnitt aus den gespeicherten Intervallen verwendet.
 
 Der Tacho wird mit einem festen Korrekturfaktor von `1,04` behandelt. Das heißt: eine gemessene Meilendifferenz von `100 mi` entspricht real `104 mi`.
 

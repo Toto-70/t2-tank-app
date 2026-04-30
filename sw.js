@@ -1,4 +1,4 @@
-const CACHE_NAME = "tank-tracker-v22";
+const CACHE_NAME = "tank-tracker-v24";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -7,6 +7,9 @@ const APP_SHELL = [
   "./version.json",
   "./manifest.webmanifest",
   "./icon.svg",
+  "./icon-192.png",
+  "./icon-512.png",
+  "./apple-touch-icon.png",
 ];
 
 self.addEventListener("install", (event) => {

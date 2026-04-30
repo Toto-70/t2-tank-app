@@ -1,11 +1,83 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="Stilisiertes Front-Icon eines blau-cremefarbenen Bullis">
   <defs>
     <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
-      <stop offset="0%" stop-color="#103d35"/>
-      <stop offset="100%" stop-color="#1a5c50"/>
+      <stop offset="0" stop-color="#173f37"/>
+      <stop offset="1" stop-color="#0d6f86"/>
     </linearGradient>
+    <linearGradient id="glass" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#b8c6c5"/>
+      <stop offset="0.52" stop-color="#60797d"/>
+      <stop offset="1" stop-color="#2a3f43"/>
+    </linearGradient>
+    <linearGradient id="body" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#15a0ba"/>
+      <stop offset="1" stop-color="#00708d"/>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="26" stdDeviation="28" flood-color="#082421" flood-opacity="0.32"/>
+    </filter>
   </defs>
-  <rect width="512" height="512" rx="120" fill="url(#bg)"/>
-  <path d="M169 145c0-18 14-32 32-32h87c18 0 32 14 32 32v18h11c28 0 50 22 50 50v166c0 11-9 20-20 20h-17v23c0 18-14 32-32 32s-32-14-32-32v-23h-79v23c0 18-14 32-32 32s-32-14-32-32v-23h-17c-11 0-20-9-20-20V195c0-28 22-50 50-50h19v-18Zm40 18v52h72v-52h-72Zm-36 100c-16 0-29 13-29 29s13 29 29 29 29-13 29-29-13-29-29-29Zm146 0c-16 0-29 13-29 29s13 29 29 29 29-13 29-29-13-29-29-29Z" fill="#f4efe4"/>
-  <path d="M367 136c24 10 41 34 41 62v23h-22v-23c0-18-10-34-25-42l6-20Z" fill="#f0b46c"/>
+
+  <rect width="1024" height="1024" rx="220" fill="url(#bg)"/>
+  <path d="M116 810c99-40 197-59 309-42 83 13 144 48 244 44 85-3 163-31 239-70v282H116z" fill="#0c302c" opacity=".2"/>
+
+  <g filter="url(#softShadow)">
+    <path d="M236 167c18-45 60-71 113-75h326c55 4 96 30 114 75l29 126H207z" fill="#f2ecdc"/>
+    <path d="M272 178c16-24 43-38 79-40h322c36 2 63 16 79 40l20 76H252z" fill="#d8d2c2"/>
+    <path d="M179 300c0-34 28-62 62-62h542c34 0 62 28 62 62v486c0 42-34 76-76 76H255c-42 0-76-34-76-76z" fill="#f2ecdc"/>
+    <path d="M203 498h618v287c0 29-23 52-52 52H255c-29 0-52-23-52-52z" fill="url(#body)"/>
+
+    <path d="M259 264h506c22 0 40 18 40 40v176H219V304c0-22 18-40 40-40z" fill="#102428"/>
+    <path d="M283 286h458c19 0 34 15 34 34v132H249V320c0-19 15-34 34-34z" fill="url(#glass)"/>
+    <path d="M326 286h72l-87 166h-57zM474 286h32l-87 166h-31z" fill="#f7fbf3" opacity=".22"/>
+    <path d="M590 286h62l77 166h-58z" fill="#f7fbf3" opacity=".16"/>
+
+    <path d="M318 467c39-22 83-27 129-15" fill="none" stroke="#111b1f" stroke-width="18" stroke-linecap="round"/>
+    <path d="M571 452c47-11 92-7 135 16" fill="none" stroke="#111b1f" stroke-width="18" stroke-linecap="round"/>
+    <circle cx="456" cy="482" r="13" fill="#111b1f"/>
+    <circle cx="568" cy="482" r="13" fill="#111b1f"/>
+
+    <rect x="258" y="530" width="92" height="62" rx="12" fill="#d88916"/>
+    <rect x="674" y="530" width="92" height="62" rx="12" fill="#d88916"/>
+    <rect x="286" y="546" width="38" height="30" rx="5" fill="#f0b13c" opacity=".55"/>
+    <rect x="702" y="546" width="38" height="30" rx="5" fill="#f0b13c" opacity=".55"/>
+
+    <g fill="#0d3441">
+      <rect x="378" y="532" width="10" height="61" rx="5"/>
+      <rect x="400" y="532" width="10" height="61" rx="5"/>
+      <rect x="422" y="532" width="10" height="61" rx="5"/>
+      <rect x="444" y="532" width="10" height="61" rx="5"/>
+      <rect x="466" y="532" width="10" height="61" rx="5"/>
+      <rect x="488" y="532" width="10" height="61" rx="5"/>
+      <rect x="510" y="532" width="10" height="61" rx="5"/>
+      <rect x="532" y="532" width="10" height="61" rx="5"/>
+      <rect x="554" y="532" width="10" height="61" rx="5"/>
+      <rect x="576" y="532" width="10" height="61" rx="5"/>
+      <rect x="598" y="532" width="10" height="61" rx="5"/>
+      <rect x="620" y="532" width="10" height="61" rx="5"/>
+    </g>
+
+    <circle cx="330" cy="690" r="75" fill="#134755"/>
+    <circle cx="330" cy="690" r="56" fill="#e9eee9"/>
+    <circle cx="330" cy="690" r="39" fill="#81908d"/>
+    <circle cx="330" cy="690" r="25" fill="#f7fbf2" opacity=".85"/>
+    <path d="M300 666c24-19 57-18 81 1" fill="none" stroke="#ffffff" stroke-width="9" stroke-linecap="round" opacity=".55"/>
+
+    <circle cx="694" cy="690" r="75" fill="#134755"/>
+    <circle cx="694" cy="690" r="56" fill="#e9eee9"/>
+    <circle cx="694" cy="690" r="39" fill="#81908d"/>
+    <circle cx="694" cy="690" r="25" fill="#f7fbf2" opacity=".85"/>
+    <path d="M664 666c24-19 57-18 81 1" fill="none" stroke="#ffffff" stroke-width="9" stroke-linecap="round" opacity=".55"/>
+
+    <circle cx="512" cy="656" r="135" fill="#d8d1bf"/>
+    <circle cx="512" cy="656" r="116" fill="#eee8d8"/>
+    <circle cx="512" cy="656" r="96" fill="#d5cfbf"/>
+    <path d="M397 633c28-77 117-112 188-72" fill="none" stroke="#ffffff" stroke-width="15" stroke-linecap="round" opacity=".42"/>
+    <path d="M394 734c31 36 74 56 118 56 58 0 109-32 137-78" fill="none" stroke="#b9b2a2" stroke-width="12" stroke-linecap="round" opacity=".8"/>
+
+    <path d="M180 778h664v47c0 25-20 45-45 45H225c-25 0-45-20-45-45z" fill="#f2ecdc"/>
+    <path d="M234 793h556" fill="none" stroke="#cfc8b8" stroke-width="13" stroke-linecap="round"/>
+    <rect x="419" y="810" width="186" height="52" rx="10" fill="#f5f4ec"/>
+    <text x="512" y="847" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="38" font-weight="700" fill="#1b2428">JT</text>
+  </g>
 </svg>

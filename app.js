@@ -285,6 +285,10 @@ function validateOdometerVisionResult(result) {
     return "OpenAI Vision konnte keinen plausiblen Meilenstand erkennen. Bitte manuell eintragen.";
   }
 
+  if (!Number.isFinite(result.confidencePercent) || result.confidencePercent < 50) {
+    return `Keinen ausreichend sicheren Meilenstand erkannt (${result.confidencePercent || 0}%). Bitte Foto erneut aufnehmen oder manuell eintragen.`;
+  }
+
   const highestOdometer = getHighestSavedOdometer();
   if (Number.isFinite(highestOdometer) && result.odometerMiles <= highestOdometer) {
     return `Erkannt: ${formatNumber(result.odometerMiles, 1)} mi. Der Wert liegt nicht über dem letzten gespeicherten Stand. Bitte manuell prüfen.`;

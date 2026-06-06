@@ -1,8 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="Stilisiertes Front-Icon eines blau-cremefarbenen Bullis">
   <defs>
     <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
-      <stop offset="0" stop-color="#173f37"/>
-      <stop offset="1" stop-color="#0d6f86"/>
+      <stop offset="0" stop-color="#1bb8e4"/>
+      <stop offset="0.48" stop-color="#007daf"/>
+      <stop offset="1" stop-color="#044f78"/>
+    </linearGradient>
+    <linearGradient id="road" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#0a4567"/>
+      <stop offset="1" stop-color="#07334f"/>
     </linearGradient>
     <linearGradient id="glass" x1="0" x2="1" y1="0" y2="1">
       <stop offset="0" stop-color="#b8c6c5"/>
@@ -19,7 +24,10 @@
   </defs>
 
   <rect width="1024" height="1024" rx="220" fill="url(#bg)"/>
-  <path d="M116 810c99-40 197-59 309-42 83 13 144 48 244 44 85-3 163-31 239-70v282H116z" fill="#0c302c" opacity=".2"/>
+  <path d="M94 214c175-102 354-140 536-112 124 19 224 68 330 143v132c-124-81-236-129-360-147-176-25-347 18-506 122z" fill="#70d9f3" opacity=".22"/>
+  <path d="M-40 388c184-114 370-159 558-134 184 25 348 111 546 268v130C842 468 675 366 493 342 315 319 150 367-40 494z" fill="#ffffff" opacity=".13"/>
+  <path d="M0 712c127-66 247-89 360-68 100 18 173 68 282 74 99 5 198-28 382-116v422H0z" fill="#064c73" opacity=".48"/>
+  <path d="M0 802c113-49 230-61 349-36 107 23 187 69 306 71 106 2 202-31 369-105v292H0z" fill="#07344f" opacity=".46"/>
 
   <g filter="url(#softShadow)">
     <path d="M236 167c18-45 60-71 113-75h326c55 4 96 30 114 75l29 126H207z" fill="#f2ecdc"/>

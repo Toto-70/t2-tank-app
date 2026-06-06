@@ -29,7 +29,7 @@
           <strong class="stat-value" id="max-odometer">Nicht berechenbar</strong>
         </article>
         <article class="stat-card accent-card">
-          <span class="stat-label">Mit 50 km Puffer</span>
+          <span class="stat-label">Mit 25 km Puffer</span>
           <strong class="stat-value" id="buffered-max-odometer">Nicht berechenbar</strong>
         </article>
         <article class="stat-card stat-card--consumption-neutral" id="last-consumption-card">
@@ -70,6 +70,17 @@
           <span>Meilenstand nach dem Tanken</span>
           <input id="odometerMiles" name="odometerMiles" type="number" inputmode="decimal" min="0" step="0.1" placeholder="z. B. 41235.6" required>
         </label>
+
+        <div class="odometer-photo">
+          <div class="odometer-photo-actions">
+            <button class="button button-secondary" type="button" id="capture-odometer">Tacho fotografieren</button>
+            <input id="odometer-photo-input" type="file" accept="image/*" capture="environment" hidden>
+          </div>
+          <div class="odometer-photo-preview" id="odometer-photo-preview" hidden>
+            <canvas id="odometer-photo-canvas" aria-label="Tachofoto-Vorschau"></canvas>
+            <p id="odometer-photo-status" aria-live="polite"></p>
+          </div>
+        </div>
 
         <label class="field">
           <span>Getankte Liter</span>

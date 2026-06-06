@@ -1,0 +1,7 @@
+name = "t2-tank-odometer"
+main = "read-odometer.js"
+compatibility_date = "2026-06-06"
+
+[vars]
+OPENAI_MODEL = "gpt-5-mini"
+ALLOWED_ORIGINS = "https://toto-70.github.io,http://127.0.0.1:8080"

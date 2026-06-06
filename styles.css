@@ -1,16 +1,16 @@
 :root {
   color-scheme: light;
-  --bg-top: #f4efe4;
-  --bg-bottom: #dbe6df;
-  --panel: rgba(255, 253, 248, 0.86);
-  --panel-strong: rgba(17, 61, 53, 0.95);
-  --text: #152620;
-  --muted: #567067;
-  --line: rgba(21, 38, 32, 0.12);
-  --accent: #103d35;
-  --accent-soft: #dbefe8;
+  --bg-top: #edf7fb;
+  --bg-bottom: #d7e9ef;
+  --panel: rgba(255, 253, 248, 0.96);
+  --panel-strong: rgba(0, 103, 137, 0.96);
+  --text: #10272f;
+  --muted: #4f6f7a;
+  --line: rgba(16, 39, 47, 0.2);
+  --accent: #00749d;
+  --accent-soft: #d8eef6;
   --danger: #9f2d28;
-  --shadow: 0 18px 50px rgba(16, 61, 53, 0.12);
+  --shadow: 0 18px 50px rgba(0, 102, 137, 0.16);
   --radius-lg: 28px;
   --radius-md: 18px;
   --radius-sm: 12px;
@@ -40,8 +40,8 @@ body::before {
   inset: 0;
   pointer-events: none;
   background:
-    linear-gradient(135deg, rgba(16, 61, 53, 0.05), transparent 42%),
-    linear-gradient(315deg, rgba(192, 98, 42, 0.08), transparent 28%);
+    linear-gradient(135deg, rgba(0, 116, 157, 0.08), transparent 42%),
+    linear-gradient(315deg, rgba(77, 162, 190, 0.12), transparent 28%);
 }
 
 .app-shell {
@@ -59,7 +59,7 @@ p {
 .panel {
   backdrop-filter: blur(16px);
   background: var(--panel);
-  border: 1px solid rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(21, 38, 32, 0.08);
   box-shadow: var(--shadow);
   border-radius: var(--radius-lg);
   padding: 22px;
@@ -68,7 +68,7 @@ p {
 
 .panel-form {
   background:
-    linear-gradient(180deg, rgba(255, 253, 248, 0.94), rgba(239, 246, 243, 0.88));
+    linear-gradient(180deg, rgba(255, 253, 248, 0.98), rgba(238, 246, 242, 0.96));
 }
 
 .section-heading {
@@ -122,7 +122,7 @@ form {
   border: 1px solid var(--line);
   font: inherit;
   color: var(--text);
-  background: rgba(255, 255, 255, 0.84);
+  background: rgba(255, 255, 255, 0.98);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
 }
 
@@ -140,8 +140,8 @@ input[type="date"] {
 }
 
 .field input:focus {
-  outline: 2px solid rgba(16, 61, 53, 0.16);
-  border-color: rgba(16, 61, 53, 0.28);
+  outline: 2px solid rgba(0, 116, 157, 0.18);
+  border-color: rgba(0, 116, 157, 0.34);
 }
 
 .form-actions {
@@ -170,7 +170,7 @@ input[type="date"] {
 
 .button-primary {
   color: white;
-  background: linear-gradient(135deg, #103d35, #1a5c50);
+  background: linear-gradient(135deg, #006789, #0097bf);
   width: min(100%, 320px);
   padding: 16px 24px;
   font-size: 1.05rem;
@@ -190,6 +190,66 @@ input[type="date"] {
 .button-small {
   padding: 10px 14px;
   font-size: 0.95rem;
+}
+
+.odometer-photo {
+  display: grid;
+  gap: 12px;
+}
+
+.odometer-photo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.odometer-photo-preview {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid var(--line);
+}
+
+.odometer-photo-preview canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 220px;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+  background: #111;
+}
+
+.odometer-photo-preview p {
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.odometer-photo-preview p.is-success {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.odometer-photo-check {
+  display: inline-grid;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 999px;
+  color: white;
+  background: #1d6a50;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.odometer-photo-preview p.is-error {
+  color: var(--danger);
 }
 
 .form-message {
@@ -245,13 +305,14 @@ input[type="date"] {
   gap: 4px;
   padding: 18px;
   border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.68);
-  border: 1px solid rgba(21, 38, 32, 0.08);
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(21, 38, 32, 0.16);
+  box-shadow: 0 8px 20px rgba(0, 102, 137, 0.07);
 }
 
 .stat-card--consumption-low {
-  background: linear-gradient(180deg, rgba(245, 252, 248, 0.94), rgba(232, 246, 239, 0.88));
-  border-color: rgba(29, 106, 80, 0.16);
+  background: linear-gradient(180deg, rgba(240, 250, 254, 0.96), rgba(222, 240, 247, 0.92));
+  border-color: rgba(0, 116, 157, 0.22);
 }
 
 .stat-card--consumption-medium {
@@ -265,19 +326,20 @@ input[type="date"] {
 }
 
 .stat-card--consumption-neutral {
-  background: linear-gradient(180deg, rgba(247, 248, 247, 0.94), rgba(235, 239, 237, 0.88));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(241, 245, 243, 0.96));
+  border-color: rgba(21, 38, 32, 0.16);
 }
 
 .soft-accent-card {
-  background: linear-gradient(180deg, rgba(239, 246, 243, 0.92), rgba(231, 241, 237, 0.82));
-  border-color: rgba(16, 61, 53, 0.14);
+  background: linear-gradient(180deg, rgba(232, 247, 252, 0.98), rgba(210, 235, 244, 0.96));
+  border-color: rgba(0, 116, 157, 0.26);
 }
 
 .accent-card {
   color: white;
   background:
     radial-gradient(circle at top right, rgba(255, 255, 255, 0.18), transparent 34%),
-    linear-gradient(135deg, #103d35, #1a5c50);
+    linear-gradient(135deg, #006789, #0097bf);
 }
 
 .stat-label {
@@ -302,8 +364,8 @@ input[type="date"] {
   padding: 18px;
   border-radius: var(--radius-md);
   color: var(--muted);
-  background: rgba(255, 255, 255, 0.55);
-  border: 1px dashed rgba(21, 38, 32, 0.15);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px dashed rgba(21, 38, 32, 0.24);
 }
 
 .history-list {
@@ -318,7 +380,7 @@ input[type="date"] {
   padding: 18px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(244, 249, 247, 0.82));
   border: 1px solid rgba(21, 38, 32, 0.1);
-  box-shadow: 0 10px 24px rgba(16, 61, 53, 0.06);
+  box-shadow: 0 10px 24px rgba(0, 102, 137, 0.07);
 }
 
 .history-item::before {
@@ -330,11 +392,11 @@ input[type="date"] {
 }
 
 .history-item--consumption-low {
-  background: linear-gradient(180deg, rgba(245, 252, 248, 0.94), rgba(232, 246, 239, 0.88));
+  background: linear-gradient(180deg, rgba(240, 250, 254, 0.96), rgba(222, 240, 247, 0.92));
 }
 
 .history-item--consumption-low::before {
-  background: linear-gradient(180deg, #1d6a50, #3ea47d);
+  background: linear-gradient(180deg, #006789, #0097bf);
 }
 
 .history-item--consumption-medium {

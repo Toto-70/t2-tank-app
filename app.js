@@ -3,8 +3,12 @@ const APP_VERSION_FALLBACK = "lokal";
 const MILES_TO_KM = 1.609344;
 const TANK_CAPACITY_LITERS = 55;
 const ODOMETER_CORRECTION_FACTOR = 1.04;
-const RANGE_BUFFER_KM = 50;
+const RANGE_BUFFER_KM = 25;
 const FALLBACK_CONSUMPTION_L_PER_100_KM = 15;
+const VISION_ENDPOINT_STORAGE_KEY = "tank-tracker-vision-endpoint-v1";
+const DEFAULT_VISION_ENDPOINT = "https://t2-tank-odometer.thorsten-762.workers.dev/";
+const ODOMETER_IMAGE_MAX_EDGE = 1600;
+const ODOMETER_IMAGE_JPEG_QUALITY = 0.82;
 
 const elements = {
   form: document.getElementById("fuel-form"),
@@ -12,6 +16,11 @@ const elements = {
   tourName: document.getElementById("tour-name"),
   date: document.getElementById("date"),
   odometerMiles: document.getElementById("odometerMiles"),
+  captureOdometer: document.getElementById("capture-odometer"),
+  odometerPhotoInput: document.getElementById("odometer-photo-input"),
+  odometerPhotoPreview: document.getElementById("odometer-photo-preview"),
+  odometerPhotoCanvas: document.getElementById("odometer-photo-canvas"),
+  odometerPhotoStatus: document.getElementById("odometer-photo-status"),
   liters: document.getElementById("liters"),
   resetData: document.getElementById("reset-data"),
   exportData: document.getElementById("export-data"),
@@ -52,6 +61,8 @@ function init() {
   elements.refreshApp.addEventListener("click", handleRefreshApp);
   elements.tourNameInput.addEventListener("change", handleTourNameChange);
   elements.tourNameInput.addEventListener("blur", handleTourNameChange);
+  elements.captureOdometer.addEventListener("click", () => elements.odometerPhotoInput.click());
+  elements.odometerPhotoInput.addEventListener("change", handleOdometerPhotoChange);
   elements.date.addEventListener("focus", handleDateFieldActivate);
   elements.date.addEventListener("click", handleDateFieldActivate);
   elements.date.addEventListener("change", handleDateFieldChange);
@@ -153,6 +164,46 @@ async function handleImportFileChange(event) {
   }
 }
 
+async function handleOdometerPhotoChange(event) {
+  const [file] = event.target.files || [];
+  if (!file) {
+    return;
+  }
+
+  elements.captureOdometer.disabled = true;
+  setOdometerPhotoStatus("Tachofoto wird vorbereitet ...");
+
+  try {
+    const endpoint = getVisionEndpoint();
+    if (!endpoint) {
+      setOdometerPhotoStatus("Kein Vision-Endpunkt konfiguriert. Bitte Worker-URL eintragen und erneut fotografieren.", true);
+      return;
+    }
+
+    const image = await loadImageFromFile(file);
+    const compressedImage = compressOdometerImage(image);
+    drawCanvasImage(elements.odometerPhotoCanvas, compressedImage.canvas);
+    setOdometerPhotoStatus("Meilenstand wird per OpenAI Vision gelesen ...");
+
+    const recognition = await requestOdometerVision(endpoint, compressedImage.dataUrl);
+    const validationMessage = validateOdometerVisionResult(recognition);
+
+    if (validationMessage) {
+      setOdometerPhotoStatus(validationMessage, true);
+      return;
+    }
+
+    elements.odometerMiles.value = recognition.odometerMiles.toFixed(1);
+    elements.odometerMiles.focus();
+    setOdometerPhotoSuccess(recognition);
+  } catch (error) {
+    setOdometerPhotoStatus(`Fotoauswertung fehlgeschlagen: ${error.message}. Bitte manuell eintragen oder Worker-Konsole prüfen.`, true);
+  } finally {
+    elements.captureOdometer.disabled = false;
+    event.target.value = "";
+  }
+}
+
 function deleteEntry(entryId) {
   const confirmed = window.confirm("Diesen Tankvorgang wirklich löschen?");
   if (!confirmed) {
@@ -170,6 +221,159 @@ function handleRefreshApp() {
   } else {
     window.location.reload();
   }
+}
+
+function getVisionEndpoint() {
+  const storedEndpoint = localStorage.getItem(VISION_ENDPOINT_STORAGE_KEY);
+  if (storedEndpoint) {
+    return storedEndpoint;
+  }
+
+  const enteredEndpoint = window.prompt("OpenAI Vision Worker URL eintragen:", DEFAULT_VISION_ENDPOINT);
+  const normalizedEndpoint = normalizeVisionEndpoint(enteredEndpoint);
+
+  if (normalizedEndpoint) {
+    localStorage.setItem(VISION_ENDPOINT_STORAGE_KEY, normalizedEndpoint);
+  }
+
+  return normalizedEndpoint || DEFAULT_VISION_ENDPOINT;
+}
+
+function normalizeVisionEndpoint(value) {
+  if (typeof value !== "string" || !value.trim()) {
+    return "";
+  }
+
+  try {
+    const url = new URL(value.trim());
+    if (url.protocol !== "https:" && url.hostname !== "127.0.0.1" && url.hostname !== "localhost") {
+      return "";
+    }
+
+    return url.toString();
+  } catch {
+    return "";
+  }
+}
+
+async function requestOdometerVision(endpoint, imageDataUrl) {
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ imageDataUrl }),
+  });
+
+  const payload = await response.json().catch(() => null);
+  if (!payload) {
+    throw new Error("Vision request failed");
+  }
+  if (!response.ok || payload.error) {
+    throw new Error(payload.error);
+  }
+
+  return {
+    odometerMiles: Number(payload.odometerMiles),
+    visibleDigits: typeof payload.visibleDigits === "string" ? payload.visibleDigits : "",
+    confidence: typeof payload.confidence === "string" ? payload.confidence : "low",
+    confidencePercent: normalizeConfidencePercent(payload.confidencePercent, payload.confidence),
+    notes: typeof payload.notes === "string" ? payload.notes : "",
+  };
+}
+
+function validateOdometerVisionResult(result) {
+  if (!Number.isFinite(result.odometerMiles) || result.odometerMiles < 0) {
+    return "OpenAI Vision konnte keinen plausiblen Meilenstand erkennen. Bitte manuell eintragen.";
+  }
+
+  const highestOdometer = getHighestSavedOdometer();
+  if (Number.isFinite(highestOdometer) && result.odometerMiles <= highestOdometer) {
+    return `Erkannt: ${formatNumber(result.odometerMiles, 1)} mi. Der Wert liegt nicht über dem letzten gespeicherten Stand. Bitte manuell prüfen.`;
+  }
+
+  return "";
+}
+
+function normalizeConfidencePercent(confidencePercent, confidence) {
+  const numericConfidence = Number(confidencePercent);
+  if (Number.isFinite(numericConfidence)) {
+    return Math.max(0, Math.min(100, Math.round(numericConfidence)));
+  }
+
+  if (confidence === "high") {
+    return 95;
+  }
+
+  if (confidence === "medium") {
+    return 75;
+  }
+
+  return 45;
+}
+
+function loadImageFromFile(file) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    const url = URL.createObjectURL(file);
+
+    image.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Image load failed"));
+    };
+    image.src = url;
+  });
+}
+
+function compressOdometerImage(image) {
+  const sourceWidth = image.naturalWidth || image.width;
+  const sourceHeight = image.naturalHeight || image.height;
+  const scale = Math.min(1, ODOMETER_IMAGE_MAX_EDGE / Math.max(sourceWidth, sourceHeight));
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+
+  canvas.width = Math.round(sourceWidth * scale);
+  canvas.height = Math.round(sourceHeight * scale);
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+  return {
+    canvas,
+    dataUrl: canvas.toDataURL("image/jpeg", ODOMETER_IMAGE_JPEG_QUALITY),
+  };
+}
+
+function drawCanvasImage(targetCanvas, sourceCanvas) {
+  const context = targetCanvas.getContext("2d");
+
+  targetCanvas.width = sourceCanvas.width;
+  targetCanvas.height = sourceCanvas.height;
+  context.drawImage(sourceCanvas, 0, 0);
+}
+
+function setOdometerPhotoStatus(message, isError = false) {
+  elements.odometerPhotoPreview.hidden = false;
+  elements.odometerPhotoStatus.textContent = message;
+  elements.odometerPhotoStatus.classList.remove("is-success");
+  elements.odometerPhotoStatus.classList.toggle("is-error", isError);
+}
+
+function setOdometerPhotoSuccess(result) {
+  elements.odometerPhotoPreview.hidden = false;
+  elements.odometerPhotoStatus.classList.remove("is-error");
+  elements.odometerPhotoStatus.classList.add("is-success");
+  elements.odometerPhotoStatus.innerHTML = "";
+
+  const check = document.createElement("span");
+  const text = document.createElement("span");
+
+  check.className = "odometer-photo-check";
+  check.setAttribute("aria-hidden", "true");
+  check.textContent = "✓";
+  text.textContent = `Erkannt: ${formatNumber(result.odometerMiles, 1)} (${result.confidencePercent}%)`;
+
+  elements.odometerPhotoStatus.append(check, text);
 }
 
 function handleTourNameChange() {
@@ -418,10 +622,7 @@ function validateEntry(entry, entries, isFirstEntry = entries.length === 0) {
     return "Die getankten Liter müssen größer als 0 sein.";
   }
 
-  const highestOdometer = entries.reduce(
-    (maxValue, currentEntry) => Math.max(maxValue, currentEntry.odometerMiles),
-    -Infinity,
-  );
+  const highestOdometer = getHighestSavedOdometer(entries);
 
   if (entries.length && entry.odometerMiles <= highestOdometer) {
     return "Der neue Meilenstand muss höher sein als der letzte gespeicherte.";
@@ -434,6 +635,13 @@ function updateLitersFieldState() {
   const isFirstEntry = state.entries.length === 0;
   elements.liters.required = !isFirstEntry;
   elements.liters.placeholder = isFirstEntry ? "Beim ersten Eintrag optional" : "z. B. 42.50";
+}
+
+function getHighestSavedOdometer(entries = state.entries) {
+  return entries.reduce(
+    (maxValue, currentEntry) => Math.max(maxValue, currentEntry.odometerMiles),
+    -Infinity,
+  );
 }
 
 function setDateFieldValue(isoValue) {

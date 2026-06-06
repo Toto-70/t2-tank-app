@@ -7,6 +7,7 @@ Kleine, lokale Web-App zum Erfassen von Volltankvorgängen mit Meilentacho.
 - Erfassen von Datum, Meilenstand und getankten Litern pro Volltanken
 - Optionaler Tour-Name wie `Reise Ostern 2026`
 - Beim allerersten Eintrag ist nur der Tachostand erforderlich
+- Tachostand per Foto erfassen und über einen OpenAI-Vision-Worker auslesen lassen
 - Automatische Umrechnung von Meilen nach Kilometern für die Verbrauchsberechnung
 - Anzeige von letztem Verbrauch und Durchschnittsverbrauch in `l / 100 km`
 - Berechnung der geschätzten Reichweite und des maximalen Meilenstands nach dem Tanken
@@ -36,6 +37,22 @@ Das Projekt ist für GitHub Pages per GitHub Actions vorbereitet.
 5. Die App ist danach unter einer URL wie `https://Toto-70.github.io/t2-tank-app/` erreichbar.
 
 Die App-Daten bleiben weiterhin lokal auf dem jeweiligen iPhone im Browser bzw. in der installierten PWA gespeichert.
+
+## Tachofoto-Erkennung mit OpenAI Vision
+
+Die App kann ein Foto vom Meilentacho aufnehmen, lokal verkleinern und an einen separaten Cloudflare Worker senden. Der Worker ruft OpenAI Vision auf und gibt eine strukturierte JSON-Antwort zurück. Der erkannte Wert wird nur in das Feld `Meilenstand nach dem Tanken` eingetragen und muss vor dem Speichern geprüft werden.
+
+Der OpenAI API Key darf nicht im Browser-Code oder in GitHub Pages liegen. Er wird als Secret im Worker gespeichert:
+
+```powershell
+cd workers
+wrangler secret put OPENAI_API_KEY
+wrangler deploy
+```
+
+Optional kann `ALLOWED_ORIGINS` in [workers/wrangler.toml](workers/wrangler.toml) auf die GitHub-Pages-URL und lokale Test-URL eingeschränkt werden.
+
+Beim ersten Foto fragt die App nach der Worker-URL, z. B. `https://t2-tank-odometer.<account>.workers.dev/`. Diese URL wird lokal im Browser gespeichert; sie enthält kein Secret.
 
 ## Wichtige Annahme
 

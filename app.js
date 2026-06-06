@@ -61,7 +61,7 @@ function init() {
   elements.refreshApp.addEventListener("click", handleRefreshApp);
   elements.tourNameInput.addEventListener("change", handleTourNameChange);
   elements.tourNameInput.addEventListener("blur", handleTourNameChange);
-  elements.captureOdometer.addEventListener("click", () => elements.odometerPhotoInput.click());
+  elements.captureOdometer.addEventListener("click", handleCaptureOdometerClick);
   elements.odometerPhotoInput.addEventListener("change", handleOdometerPhotoChange);
   elements.date.addEventListener("focus", handleDateFieldActivate);
   elements.date.addEventListener("click", handleDateFieldActivate);
@@ -98,6 +98,7 @@ function handleSubmit(event) {
   elements.form.reset();
   elements.tourNameInput.value = state.tourName || "";
   setDateFieldValue(getTodayIsoDate());
+  clearOdometerPhotoPreview();
   updateLitersFieldState();
   setFormMessage("Volltankvorgang gespeichert.");
   render();
@@ -162,6 +163,11 @@ async function handleImportFileChange(event) {
   } finally {
     event.target.value = "";
   }
+}
+
+function handleCaptureOdometerClick() {
+  clearOdometerPhotoPreview();
+  elements.odometerPhotoInput.click();
 }
 
 async function handleOdometerPhotoChange(event) {
@@ -378,6 +384,21 @@ function setOdometerPhotoSuccess(result) {
   text.textContent = `Erkannt: ${formatNumber(result.odometerMiles, 1)} (${result.confidencePercent}%)`;
 
   elements.odometerPhotoStatus.append(check, text);
+}
+
+function clearOdometerPhotoPreview() {
+  clearOdometerPhotoCanvas();
+  elements.odometerPhotoPreview.hidden = true;
+  elements.odometerPhotoStatus.textContent = "";
+  elements.odometerPhotoStatus.classList.remove("is-error", "is-success");
+}
+
+function clearOdometerPhotoCanvas() {
+  const context = elements.odometerPhotoCanvas.getContext("2d");
+
+  context.clearRect(0, 0, elements.odometerPhotoCanvas.width, elements.odometerPhotoCanvas.height);
+  elements.odometerPhotoCanvas.removeAttribute("width");
+  elements.odometerPhotoCanvas.removeAttribute("height");
 }
 
 function handleTourNameChange() {

@@ -29,19 +29,11 @@ body {
   min-height: 100vh;
   font-family: "Avenir Next", "Segoe UI", sans-serif;
   color: var(--text);
-  background:
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.85), transparent 36%),
-    linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+  background: var(--bg-top);
 }
 
 body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(135deg, rgba(0, 116, 157, 0.08), transparent 42%),
-    linear-gradient(315deg, rgba(77, 162, 190, 0.12), transparent 28%);
+  content: none;
 }
 
 .app-shell {
@@ -67,8 +59,7 @@ p {
 }
 
 .panel-form {
-  background:
-    linear-gradient(180deg, rgba(255, 253, 248, 0.98), rgba(238, 246, 242, 0.96));
+  background: var(--panel);
 }
 
 .section-heading {
@@ -170,7 +161,7 @@ input[type="date"] {
 
 .button-primary {
   color: white;
-  background: linear-gradient(135deg, #006789, #0097bf);
+  background: #00749d;
   width: min(100%, 320px);
   padding: 16px 24px;
   font-size: 1.05rem;
@@ -212,6 +203,10 @@ input[type="date"] {
   border: 1px solid var(--line);
 }
 
+.odometer-photo-preview[hidden] {
+  display: none;
+}
+
 .odometer-photo-preview canvas {
   display: block;
   width: 100%;
@@ -220,6 +215,10 @@ input[type="date"] {
   object-fit: contain;
   border-radius: var(--radius-sm);
   background: #111;
+}
+
+.odometer-photo-preview canvas:not([width]) {
+  display: none;
 }
 
 .odometer-photo-preview p {
@@ -311,35 +310,33 @@ input[type="date"] {
 }
 
 .stat-card--consumption-low {
-  background: linear-gradient(180deg, rgba(245, 252, 248, 0.96), rgba(232, 246, 239, 0.92));
+  background: #e8f6ef;
   border-color: rgba(29, 106, 80, 0.22);
 }
 
 .stat-card--consumption-medium {
-  background: linear-gradient(180deg, rgba(255, 249, 239, 0.94), rgba(250, 237, 215, 0.88));
+  background: #faedd7;
   border-color: rgba(184, 116, 47, 0.16);
 }
 
 .stat-card--consumption-high {
-  background: linear-gradient(180deg, rgba(255, 244, 241, 0.95), rgba(248, 226, 221, 0.9));
+  background: #f8e2dd;
   border-color: rgba(161, 60, 54, 0.16);
 }
 
 .stat-card--consumption-neutral {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(241, 245, 243, 0.96));
+  background: #f1f5f3;
   border-color: rgba(21, 38, 32, 0.16);
 }
 
 .soft-accent-card {
-  background: linear-gradient(180deg, rgba(232, 247, 252, 0.98), rgba(210, 235, 244, 0.96));
+  background: #d8eef6;
   border-color: rgba(0, 116, 157, 0.26);
 }
 
 .accent-card {
   color: white;
-  background:
-    radial-gradient(circle at top right, rgba(255, 255, 255, 0.18), transparent 34%),
-    linear-gradient(135deg, #006789, #0097bf);
+  background: #00749d;
 }
 
 .stat-label {
@@ -378,7 +375,7 @@ input[type="date"] {
   overflow: hidden;
   border-radius: var(--radius-md);
   padding: 18px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(244, 249, 247, 0.82));
+  background: rgba(255, 255, 255, 0.94);
   border: 1px solid rgba(21, 38, 32, 0.1);
   box-shadow: 0 10px 24px rgba(0, 102, 137, 0.07);
 }
@@ -388,35 +385,35 @@ input[type="date"] {
   position: absolute;
   inset: 0 auto 0 0;
   width: 6px;
-  background: linear-gradient(180deg, #6d7f79, #97aaa4);
+  background: #6d7f79;
 }
 
 .history-item--consumption-low {
-  background: linear-gradient(180deg, rgba(245, 252, 248, 0.96), rgba(232, 246, 239, 0.92));
+  background: #e8f6ef;
 }
 
 .history-item--consumption-low::before {
-  background: linear-gradient(180deg, #1d6a50, #3ea47d);
+  background: #1d6a50;
 }
 
 .history-item--consumption-medium {
-  background: linear-gradient(180deg, rgba(255, 249, 239, 0.94), rgba(250, 237, 215, 0.88));
+  background: #faedd7;
 }
 
 .history-item--consumption-medium::before {
-  background: linear-gradient(180deg, #b8742f, #d69a4f);
+  background: #b8742f;
 }
 
 .history-item--consumption-high {
-  background: linear-gradient(180deg, rgba(255, 244, 241, 0.95), rgba(248, 226, 221, 0.9));
+  background: #f8e2dd;
 }
 
 .history-item--consumption-high::before {
-  background: linear-gradient(180deg, #a13c36, #cf625b);
+  background: #a13c36;
 }
 
 .history-item--consumption-neutral {
-  background: linear-gradient(180deg, rgba(247, 248, 247, 0.94), rgba(235, 239, 237, 0.88));
+  background: #f1f5f3;
 }
 
 .history-main {

@@ -311,8 +311,8 @@ input[type="date"] {
 }
 
 .stat-card--consumption-low {
-  background: linear-gradient(180deg, rgba(240, 250, 254, 0.96), rgba(222, 240, 247, 0.92));
-  border-color: rgba(0, 116, 157, 0.22);
+  background: linear-gradient(180deg, rgba(245, 252, 248, 0.96), rgba(232, 246, 239, 0.92));
+  border-color: rgba(29, 106, 80, 0.22);
 }
 
 .stat-card--consumption-medium {
@@ -392,11 +392,11 @@ input[type="date"] {
 }
 
 .history-item--consumption-low {
-  background: linear-gradient(180deg, rgba(240, 250, 254, 0.96), rgba(222, 240, 247, 0.92));
+  background: linear-gradient(180deg, rgba(245, 252, 248, 0.96), rgba(232, 246, 239, 0.92));
 }
 
 .history-item--consumption-low::before {
-  background: linear-gradient(180deg, #006789, #0097bf);
+  background: linear-gradient(180deg, #1d6a50, #3ea47d);
 }
 
 .history-item--consumption-medium {

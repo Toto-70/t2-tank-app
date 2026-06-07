@@ -287,7 +287,7 @@ async function handleOdometerPhotoChange(event) {
     const message = `Fotoauswertung fehlgeschlagen: ${error.message}. Bitte manuell eintragen oder Worker-Konsole prüfen.`;
     if (isRangeCheck) {
       setFormMessage(message, true);
-      showRangeDialog("Auswertung fehlgeschlagen", message, true);
+      showRangeDialog("Auswertung fehlgeschlagen", message, { isError: true, isCompact: true });
     } else {
       setOdometerPhotoStatus(message, true);
     }
@@ -448,6 +448,7 @@ function showRangeDialog(title, detail, options = {}) {
   renderRangeDialogDetail(detail);
   elements.rangeDialog.classList.toggle("is-error", Boolean(normalizedOptions.isError));
   elements.rangeDialog.classList.toggle("is-pending", Boolean(normalizedOptions.isPending));
+  elements.rangeDialog.classList.toggle("is-compact", Boolean(normalizedOptions.isCompact));
 
   if (typeof elements.rangeDialog.showModal === "function") {
     if (!elements.rangeDialog.open) {

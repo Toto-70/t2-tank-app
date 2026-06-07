@@ -300,10 +300,17 @@ input[type="date"] {
 }
 
 .range-dialog-title {
+  max-width: 100%;
+  overflow-wrap: anywhere;
   font-size: clamp(2.4rem, 12vw, 4rem);
   font-weight: 800;
   line-height: 1;
   color: var(--accent);
+}
+
+.range-dialog.is-compact .range-dialog-title {
+  font-size: clamp(1.65rem, 8vw, 2.35rem);
+  line-height: 1.08;
 }
 
 .range-dialog.is-pending .range-dialog-title {
@@ -315,8 +322,15 @@ input[type="date"] {
 }
 
 .range-dialog-detail {
+  max-width: 100%;
+  overflow-wrap: anywhere;
   color: var(--muted);
   font-size: 1.05rem;
+  line-height: 1.35;
+}
+
+.range-dialog.is-compact .range-dialog-detail {
+  font-size: 0.92rem;
   line-height: 1.35;
 }
 

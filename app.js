@@ -192,6 +192,7 @@ async function handleOdometerPhotoChange(event) {
     setOdometerPhotoStatus("Meilenstand wird per OpenAI Vision gelesen ...");
 
     const recognition = await requestOdometerVision(endpoint, compressedImage.dataUrl);
+    vibrateOdometerRecognitionComplete();
     const validationMessage = validateOdometerVisionResult(recognition);
 
     if (validationMessage) {
@@ -203,6 +204,7 @@ async function handleOdometerPhotoChange(event) {
     elements.odometerMiles.focus();
     setOdometerPhotoSuccess(recognition);
   } catch (error) {
+    vibrateOdometerRecognitionComplete();
     setOdometerPhotoStatus(`Fotoauswertung fehlgeschlagen: ${error.message}. Bitte manuell eintragen oder Worker-Konsole prüfen.`, true);
   } finally {
     elements.captureOdometer.disabled = false;
@@ -301,6 +303,12 @@ function validateOdometerVisionResult(result) {
   }
 
   return "";
+}
+
+function vibrateOdometerRecognitionComplete() {
+  if (navigator.vibrate) {
+    navigator.vibrate(80);
+  }
 }
 
 function normalizeConfidencePercent(confidencePercent, confidence) {

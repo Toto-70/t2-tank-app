@@ -47,6 +47,9 @@ async function readOdometerWithOpenAI(imageDataUrl, env) {
     },
     body: JSON.stringify({
       model: env.OPENAI_MODEL || DEFAULT_MODEL,
+      reasoning: {
+        effort: env.OPENAI_REASONING_EFFORT || "minimal",
+      },
       input: [
         {
           role: "user",

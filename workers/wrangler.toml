@@ -4,4 +4,5 @@ compatibility_date = "2026-06-06"
 
 [vars]
 OPENAI_MODEL = "gpt-5-mini"
+OPENAI_REASONING_EFFORT = "minimal"
 ALLOWED_ORIGINS = "https://toto-70.github.io,http://127.0.0.1:8080"

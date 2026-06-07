@@ -37,14 +37,21 @@ const elements = {
   avgConsumption: document.getElementById("avg-consumption"),
   estimatedRange: document.getElementById("estimated-range"),
   estimatedRangeDetail: document.getElementById("estimated-range-detail"),
+  maxOdometerCard: document.getElementById("max-odometer-card"),
   maxOdometer: document.getElementById("max-odometer"),
+  bufferedMaxOdometerCard: document.getElementById("buffered-max-odometer-card"),
   bufferedMaxOdometer: document.getElementById("buffered-max-odometer"),
   summaryBasis: document.getElementById("summary-basis"),
+  rangeDialog: document.getElementById("range-dialog"),
+  rangeDialogTitle: document.getElementById("range-dialog-title"),
+  rangeDialogDetail: document.getElementById("range-dialog-detail"),
+  rangeDialogClose: document.getElementById("range-dialog-close"),
 };
 
 const state = loadState();
 let waitingServiceWorker = null;
 let currentAppVersion = APP_VERSION_FALLBACK;
+let odometerPhotoMode = "entry";
 
 init();
 
@@ -62,6 +69,12 @@ function init() {
   elements.tourNameInput.addEventListener("change", handleTourNameChange);
   elements.tourNameInput.addEventListener("blur", handleTourNameChange);
   elements.captureOdometer.addEventListener("click", handleCaptureOdometerClick);
+  elements.maxOdometerCard.addEventListener("click", () => handleRangeCheckClick("max"));
+  elements.bufferedMaxOdometerCard.addEventListener("click", () => handleRangeCheckClick("buffered"));
+  elements.maxOdometerCard.addEventListener("keydown", (event) => handleRangeCheckKeydown(event, "max"));
+  elements.bufferedMaxOdometerCard.addEventListener("keydown", (event) => handleRangeCheckKeydown(event, "buffered"));
+  elements.rangeDialogClose.addEventListener("click", closeRangeDialog);
+  elements.rangeDialog.addEventListener("click", handleRangeDialogClick);
   elements.odometerPhotoInput.addEventListener("change", handleOdometerPhotoChange);
   elements.date.addEventListener("focus", handleDateFieldActivate);
   elements.date.addEventListener("click", handleDateFieldActivate);
@@ -166,37 +179,103 @@ async function handleImportFileChange(event) {
 }
 
 function handleCaptureOdometerClick() {
+  odometerPhotoMode = "entry";
+  elements.odometerPhotoInput.removeAttribute("capture");
   clearOdometerPhotoPreview();
+  elements.odometerPhotoInput.click();
+}
+
+function handleRangeCheckKeydown(event, rangeMode) {
+  if (event.key !== "Enter" && event.key !== " ") {
+    return;
+  }
+
+  event.preventDefault();
+  handleRangeCheckClick(rangeMode);
+}
+
+function handleRangeCheckClick(rangeMode) {
+  const rangeEstimate = getCurrentRangeEstimate();
+  if (!rangeEstimate) {
+    showRangeDialog(
+      "Nicht berechenbar",
+      "Es wird mindestens ein gespeicherter Volltankvorgang benötigt.",
+      true,
+    );
+    return;
+  }
+
+  odometerPhotoMode = rangeMode === "buffered" ? "range-buffered" : "range-max";
+  elements.odometerPhotoInput.setAttribute("capture", "environment");
+  clearOdometerPhotoPreview();
+  setFormMessage("Tachofoto für Reichweiten-Check wird erwartet.");
   elements.odometerPhotoInput.click();
 }
 
 async function handleOdometerPhotoChange(event) {
   const [file] = event.target.files || [];
   if (!file) {
+    odometerPhotoMode = "entry";
+    elements.odometerPhotoInput.removeAttribute("capture");
     return;
   }
 
+  const mode = odometerPhotoMode;
+  const isRangeCheck = mode === "range-max" || mode === "range-buffered";
+
   elements.captureOdometer.disabled = true;
-  setOdometerPhotoStatus("Tachofoto wird vorbereitet ...");
+  if (isRangeCheck) {
+    showRangeDialog("Analyse läuft", "OpenAI liest den aktuellen Tachostand ...", { isPending: true });
+    setFormMessage("Aktueller Meilenstand wird per OpenAI Vision gelesen ...");
+  } else {
+    setOdometerPhotoStatus("Tachofoto wird vorbereitet ...");
+  }
 
   try {
     const endpoint = getVisionEndpoint();
     if (!endpoint) {
-      setOdometerPhotoStatus("Kein Vision-Endpunkt konfiguriert. Bitte Worker-URL eintragen und erneut fotografieren.", true);
+      if (isRangeCheck) {
+        showRangeDialog("Nicht konfiguriert", "Kein Vision-Endpunkt hinterlegt.", true);
+        setFormMessage("Kein Vision-Endpunkt konfiguriert. Bitte Worker-URL eintragen und erneut fotografieren.", true);
+      } else {
+        setOdometerPhotoStatus("Kein Vision-Endpunkt konfiguriert. Bitte Worker-URL eintragen und erneut fotografieren.", true);
+      }
       return;
     }
 
     const image = await loadImageFromFile(file);
     const compressedImage = compressOdometerImage(image);
-    drawCanvasImage(elements.odometerPhotoCanvas, compressedImage.canvas);
-    setOdometerPhotoStatus("Meilenstand wird per OpenAI Vision gelesen ...");
+    if (isRangeCheck) {
+      showRangeDialog("Analyse läuft", "OpenAI liest den aktuellen Tachostand ...", { isPending: true });
+      setFormMessage("Aktueller Meilenstand wird per OpenAI Vision gelesen ...");
+    } else {
+      drawCanvasImage(elements.odometerPhotoCanvas, compressedImage.canvas);
+      setOdometerPhotoStatus("Meilenstand wird per OpenAI Vision gelesen ...");
+    }
 
     const recognition = await requestOdometerVision(endpoint, compressedImage.dataUrl);
     vibrateOdometerRecognitionComplete();
-    const validationMessage = validateOdometerVisionResult(recognition);
+    const validationMessage = isRangeCheck
+      ? validateRangeCheckVisionResult(recognition)
+      : validateOdometerVisionResult(recognition);
 
     if (validationMessage) {
-      setOdometerPhotoStatus(validationMessage, true);
+      if (isRangeCheck) {
+        const message = typeof validationMessage === "string" ? validationMessage : validationMessage.message;
+        setFormMessage(message, true);
+        showRangeDialog(
+          validationMessage.title || "Nicht plausibel",
+          validationMessage.detail || message,
+          { isError: true },
+        );
+      } else {
+        setOdometerPhotoStatus(validationMessage, true);
+      }
+      return;
+    }
+
+    if (isRangeCheck) {
+      showRangeCheckResult(recognition, mode);
       return;
     }
 
@@ -205,9 +284,17 @@ async function handleOdometerPhotoChange(event) {
     setOdometerPhotoSuccess(recognition);
   } catch (error) {
     vibrateOdometerRecognitionComplete();
-    setOdometerPhotoStatus(`Fotoauswertung fehlgeschlagen: ${error.message}. Bitte manuell eintragen oder Worker-Konsole prüfen.`, true);
+    const message = `Fotoauswertung fehlgeschlagen: ${error.message}. Bitte manuell eintragen oder Worker-Konsole prüfen.`;
+    if (isRangeCheck) {
+      setFormMessage(message, true);
+      showRangeDialog("Auswertung fehlgeschlagen", message, true);
+    } else {
+      setOdometerPhotoStatus(message, true);
+    }
   } finally {
     elements.captureOdometer.disabled = false;
+    odometerPhotoMode = "entry";
+    elements.odometerPhotoInput.removeAttribute("capture");
     event.target.value = "";
   }
 }
@@ -303,6 +390,122 @@ function validateOdometerVisionResult(result) {
   }
 
   return "";
+}
+
+function validateRangeCheckVisionResult(result) {
+  if (!Number.isFinite(result.odometerMiles) || result.odometerMiles < 0) {
+    return "OpenAI Vision konnte keinen plausiblen aktuellen Meilenstand erkennen. Bitte Foto erneut aufnehmen.";
+  }
+
+  if (!Number.isFinite(result.confidencePercent) || result.confidencePercent < 50) {
+    return `Keinen ausreichend sicheren aktuellen Meilenstand erkannt (${result.confidencePercent || 0}%). Bitte Foto erneut aufnehmen.`;
+  }
+
+  if (!getCurrentRangeEstimate()) {
+    return "Die Reichweite ist noch nicht berechenbar. Es wird mindestens ein gespeicherter Volltankvorgang benötigt.";
+  }
+
+  const rangeEstimate = getCurrentRangeEstimate();
+  if (result.odometerMiles < rangeEstimate.latestOdometerMiles) {
+    const recognizedValue = `${formatNumber(result.odometerMiles, 1)} mi`;
+
+    return {
+      title: "Nicht plausibel",
+      message: `Erkannt: ${recognizedValue}. Der Wert liegt unter dem letzten gespeicherten Volltankstand. Bitte Foto erneut aufnehmen.`,
+      detail: createInvalidOdometerDetail(recognizedValue),
+    };
+  }
+
+  return "";
+}
+
+function showRangeCheckResult(recognition, mode) {
+  const rangeEstimate = getCurrentRangeEstimate();
+  if (!rangeEstimate) {
+    const message = "Die Reichweite ist noch nicht berechenbar. Es wird mindestens ein gespeicherter Volltankvorgang benötigt.";
+    setFormMessage(message, true);
+    showRangeDialog("Nicht berechenbar", message, true);
+    return;
+  }
+
+  const targetOdometerMiles = mode === "range-buffered"
+    ? rangeEstimate.bufferedMaxOdometerMiles
+    : rangeEstimate.maxOdometerMiles;
+  const remainingDisplayedMiles = targetOdometerMiles - recognition.odometerMiles;
+  const remainingKm = Math.max(0, remainingDisplayedMiles * ODOMETER_CORRECTION_FACTOR * MILES_TO_KM);
+
+  setFormMessage(`Reichweiten-Check abgeschlossen.`);
+  showRangeDialog(
+    `Noch ${formatNumber(remainingKm, 0)}\u00a0km`,
+    createCurrentOdometerDetail(`${formatNumber(recognition.odometerMiles, 1)} mi`),
+  );
+}
+
+function showRangeDialog(title, detail, options = {}) {
+  const normalizedOptions = typeof options === "boolean" ? { isError: options } : options;
+
+  elements.rangeDialogTitle.textContent = title;
+  renderRangeDialogDetail(detail);
+  elements.rangeDialog.classList.toggle("is-error", Boolean(normalizedOptions.isError));
+  elements.rangeDialog.classList.toggle("is-pending", Boolean(normalizedOptions.isPending));
+
+  if (typeof elements.rangeDialog.showModal === "function") {
+    if (!elements.rangeDialog.open) {
+      elements.rangeDialog.showModal();
+    }
+  } else {
+    elements.rangeDialog.hidden = false;
+  }
+}
+
+function renderRangeDialogDetail(detail) {
+  elements.rangeDialogDetail.innerHTML = "";
+
+  if (detail instanceof Node) {
+    elements.rangeDialogDetail.append(detail);
+    return;
+  }
+
+  elements.rangeDialogDetail.textContent = detail;
+}
+
+function createCurrentOdometerDetail(recognizedValue) {
+  const fragment = document.createDocumentFragment();
+  const value = document.createElement("strong");
+
+  value.textContent = recognizedValue;
+  fragment.append("Aktueller Stand: ", value);
+
+  return fragment;
+}
+
+function createInvalidOdometerDetail(recognizedValue) {
+  const fragment = document.createDocumentFragment();
+  const value = document.createElement("strong");
+
+  value.textContent = recognizedValue;
+  fragment.append(
+    "Erkannt: ",
+    value,
+    document.createElement("br"),
+    "Der Wert liegt unter dem letzten gespeicherten Volltankstand. Bitte Foto erneut aufnehmen.",
+  );
+
+  return fragment;
+}
+
+function closeRangeDialog() {
+  if (typeof elements.rangeDialog.close === "function" && elements.rangeDialog.open) {
+    elements.rangeDialog.close();
+  } else {
+    elements.rangeDialog.hidden = true;
+  }
+}
+
+function handleRangeDialogClick(event) {
+  if (event.target === elements.rangeDialog) {
+    closeRangeDialog();
+  }
 }
 
 function vibrateOdometerRecognitionComplete() {
@@ -512,19 +715,49 @@ function renderSummary() {
 }
 
 function renderRangeEstimate(latestEntry, consumptionLPerKm) {
+  const rangeEstimate = calculateRangeEstimate(latestEntry, consumptionLPerKm);
+
+  elements.estimatedRange.textContent = `${formatNumber(rangeEstimate.estimatedRangeActualMiles, 0)} mi`;
+  elements.maxOdometer.textContent = `${formatNumber(rangeEstimate.maxOdometerMiles, 0)} mi`;
+  elements.bufferedMaxOdometer.textContent = `${formatNumber(rangeEstimate.bufferedMaxOdometerMiles, 0)} mi`;
+
+  return rangeEstimate.estimatedRangeKm;
+}
+
+function calculateRangeEstimate(latestEntry, consumptionLPerKm) {
   const estimatedRangeKm = TANK_CAPACITY_LITERS / consumptionLPerKm;
   const estimatedRangeActualMiles = estimatedRangeKm / MILES_TO_KM;
   const estimatedRangeDisplayedMiles = estimatedRangeActualMiles / ODOMETER_CORRECTION_FACTOR;
   const bufferedRangeKm = Math.max(0, estimatedRangeKm - RANGE_BUFFER_KM);
   const bufferedRangeDisplayedMiles = (bufferedRangeKm / MILES_TO_KM) / ODOMETER_CORRECTION_FACTOR;
-  const maxOdometerMiles = latestEntry.odometerMiles + estimatedRangeDisplayedMiles;
-  const bufferedMaxOdometerMiles = latestEntry.odometerMiles + bufferedRangeDisplayedMiles;
 
-  elements.estimatedRange.textContent = `${formatNumber(estimatedRangeActualMiles, 0)} mi`;
-  elements.maxOdometer.textContent = `${formatNumber(maxOdometerMiles, 0)} mi`;
-  elements.bufferedMaxOdometer.textContent = `${formatNumber(bufferedMaxOdometerMiles, 0)} mi`;
+  return {
+    estimatedRangeKm,
+    estimatedRangeActualMiles,
+    latestOdometerMiles: latestEntry.odometerMiles,
+    maxOdometerMiles: latestEntry.odometerMiles + estimatedRangeDisplayedMiles,
+    bufferedMaxOdometerMiles: latestEntry.odometerMiles + bufferedRangeDisplayedMiles,
+  };
+}
 
-  return estimatedRangeKm;
+function getCurrentRangeEstimate() {
+  const sortedEntries = [...state.entries].sort((a, b) => a.odometerMiles - b.odometerMiles);
+  const latestEntry = sortedEntries.at(-1);
+
+  if (!latestEntry) {
+    return null;
+  }
+
+  const intervals = getIntervals(state.entries);
+  const consumptionLPerKm = intervals.length
+    ? getAverageConsumption(intervals)
+    : FALLBACK_CONSUMPTION_L_PER_100_KM / 100;
+
+  if (!Number.isFinite(consumptionLPerKm) || consumptionLPerKm <= 0) {
+    return null;
+  }
+
+  return calculateRangeEstimate(latestEntry, consumptionLPerKm);
 }
 
 function renderHistory() {

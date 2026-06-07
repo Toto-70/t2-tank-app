@@ -24,11 +24,11 @@
       </div>
 
       <div class="stats-grid" id="stats-grid">
-        <article class="stat-card soft-accent-card">
+        <article class="stat-card stat-card-action soft-accent-card" id="max-odometer-card" role="button" tabindex="0" aria-label="Maximale Reichweite per Tachofoto prüfen">
           <span class="stat-label">Max. Meilenstand</span>
           <strong class="stat-value" id="max-odometer">Nicht berechenbar</strong>
         </article>
-        <article class="stat-card accent-card">
+        <article class="stat-card stat-card-action accent-card" id="buffered-max-odometer-card" role="button" tabindex="0" aria-label="Reichweite mit 25 Kilometer Puffer per Tachofoto prüfen">
           <span class="stat-label">Mit 25 km Puffer</span>
           <strong class="stat-value" id="buffered-max-odometer">Nicht berechenbar</strong>
         </article>
@@ -120,6 +120,14 @@
       </div>
     </section>
   </main>
+
+  <dialog class="range-dialog" id="range-dialog" aria-labelledby="range-dialog-title">
+    <div class="range-dialog-content">
+      <p class="range-dialog-title" id="range-dialog-title"></p>
+      <p class="range-dialog-detail" id="range-dialog-detail"></p>
+      <button class="button button-primary range-dialog-close" type="button" id="range-dialog-close">OK</button>
+    </div>
+  </dialog>
 
   <template id="history-item-template">
     <article class="history-item">

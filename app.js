@@ -481,9 +481,9 @@ function renderSummary() {
     if (latestEntry) {
       renderRangeEstimate(latestEntry, FALLBACK_CONSUMPTION_L_PER_100_KM / 100);
       elements.estimatedRangeDetail.textContent =
-        `Fallback mit ${formatNumber(FALLBACK_CONSUMPTION_L_PER_100_KM, 0)} l / 100 km und ${TANK_CAPACITY_LITERS} l`;
+        `Fallback mit ${formatNumber(FALLBACK_CONSUMPTION_L_PER_100_KM, 0)} l / 100\u00a0km und ${TANK_CAPACITY_LITERS} l`;
       elements.summaryBasis.textContent =
-        `Fallback: ${formatNumber(FALLBACK_CONSUMPTION_L_PER_100_KM, 0)} l / 100 km bis zur zweiten Volltankung.`;
+        `Fallback: ${formatNumber(FALLBACK_CONSUMPTION_L_PER_100_KM, 0)} l / 100\u00a0km bis zur zweiten Volltankung.`;
     } else {
       elements.estimatedRange.textContent = "Noch keine Daten";
       elements.estimatedRangeDetail.textContent = "Es fehlen mindestens zwei Volltankungen";
@@ -502,9 +502,9 @@ function renderSummary() {
   const totalTankEvents = intervals.length;
 
   setLastConsumptionCardTone(lastInterval);
-  elements.lastConsumption.textContent = `${formatNumber(lastLPer100Km, 2)} l / 100 km`;
+  elements.lastConsumption.textContent = `${formatNumber(lastLPer100Km, 2)} l / 100\u00a0km`;
 
-  elements.avgConsumption.textContent = `${formatNumber(avgLPer100Km, 2)} l / 100 km`;
+  elements.avgConsumption.textContent = `${formatNumber(avgLPer100Km, 2)} l / 100\u00a0km`;
 
   const estimatedRangeKm = renderRangeEstimate(latestEntry, avgConsumptionLPerKm);
   elements.estimatedRangeDetail.textContent = `${formatNumber(estimatedRangeKm, 0)} km real mit ${TANK_CAPACITY_LITERS} l`;
@@ -566,7 +566,7 @@ function renderHistory() {
 
       if (interval) {
         addMetric(metrics, "Strecke", `${formatNumber(interval.actualDistanceMiles, 1)} mi real / ${formatNumber(interval.actualDistanceKm, 1)} km`);
-        addMetric(metrics, "Verbrauch", `${formatNumber(interval.consumptionLPerKm * 100, 2)} l / 100 km`);
+        addMetric(metrics, "Verbrauch", `${formatNumber(interval.consumptionLPerKm * 100, 2)} l / 100\u00a0km`);
         addMetric(metrics, "Tendenz", formatTrend(interval));
       } else {
         addMetric(metrics, "Strecke", "Erster Eintrag");

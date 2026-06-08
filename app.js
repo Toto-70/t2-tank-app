@@ -104,6 +104,8 @@ function handleSubmit(event) {
     return;
   }
 
+  const isHistoricalInsert = state.entries.some((existingEntry) => existingEntry.odometerMiles > entry.odometerMiles);
+
   state.entries.push(entry);
   state.entries.sort((a, b) => a.odometerMiles - b.odometerMiles);
   saveState();
@@ -113,7 +115,7 @@ function handleSubmit(event) {
   setDateFieldValue(getTodayIsoDate());
   clearOdometerPhotoPreview();
   updateLitersFieldState();
-  setFormMessage("Volltankvorgang gespeichert.");
+  setFormMessage(isHistoricalInsert ? "Volltankvorgang in die Historie eingefügt." : "Volltankvorgang gespeichert.");
   render();
 }
 
@@ -384,9 +386,16 @@ function validateOdometerVisionResult(result) {
     return `Keinen ausreichend sicheren Meilenstand erkannt (${result.confidencePercent || 0}%). Bitte Foto erneut aufnehmen oder manuell eintragen.`;
   }
 
-  const highestOdometer = getHighestSavedOdometer();
-  if (Number.isFinite(highestOdometer) && result.odometerMiles <= highestOdometer) {
-    return `Erkannt: ${formatNumber(result.odometerMiles, 1)} mi. Der Wert liegt nicht über dem letzten gespeicherten Stand. Bitte manuell prüfen.`;
+  const sequenceValidationMessage = validateEntrySequencePosition(
+    {
+      date: elements.date.dataset.isoValue || getTodayIsoDate(),
+      odometerMiles: result.odometerMiles,
+    },
+    state.entries,
+  );
+
+  if (sequenceValidationMessage) {
+    return `Erkannt: ${formatNumber(result.odometerMiles, 1)} mi. ${sequenceValidationMessage}`;
   }
 
   return "";
@@ -877,6 +886,10 @@ function validateEntry(entry, entries, isFirstEntry = entries.length === 0) {
     return "Bitte ein Datum eintragen.";
   }
 
+  if (!isValidIsoDate(entry.date)) {
+    return "Bitte ein gültiges Datum eintragen.";
+  }
+
   if (!Number.isFinite(entry.odometerMiles) || entry.odometerMiles < 0) {
     return "Der Meilenstand muss eine gültige Zahl sein.";
   }
@@ -889,26 +902,50 @@ function validateEntry(entry, entries, isFirstEntry = entries.length === 0) {
     return "Die getankten Liter müssen größer als 0 sein.";
   }
 
-  const highestOdometer = getHighestSavedOdometer(entries);
-
-  if (entries.length && entry.odometerMiles <= highestOdometer) {
-    return "Der neue Meilenstand muss höher sein als der letzte gespeicherte.";
+  const sequenceValidationMessage = validateEntrySequencePosition(entry, entries);
+  if (sequenceValidationMessage) {
+    return sequenceValidationMessage;
   }
 
   return "";
+}
+
+function validateEntrySequencePosition(entry, entries) {
+  if (!entries.length) {
+    return "";
+  }
+
+  const sortedEntries = [...entries].sort((a, b) => a.odometerMiles - b.odometerMiles);
+  const duplicateOdometerEntry = sortedEntries.find((existingEntry) =>
+    areOdometerValuesEqual(existingEntry.odometerMiles, entry.odometerMiles)
+  );
+
+  if (duplicateOdometerEntry) {
+    return "Dieser Meilenstand ist bereits gespeichert.";
+  }
+
+  const previousEntry = [...sortedEntries].reverse().find((existingEntry) => existingEntry.odometerMiles < entry.odometerMiles);
+  const nextEntry = sortedEntries.find((existingEntry) => existingEntry.odometerMiles > entry.odometerMiles);
+
+  if (previousEntry && compareIsoDates(entry.date, previousEntry.date) < 0) {
+    return `Das Datum passt nicht zum Meilenstand. Der vorherige gespeicherte Stand (${formatNumber(previousEntry.odometerMiles, 1)} mi) ist vom ${formatDate(previousEntry.date)}.`;
+  }
+
+  if (nextEntry && compareIsoDates(entry.date, nextEntry.date) > 0) {
+    return `Das Datum passt nicht zum Meilenstand. Der nächste gespeicherte Stand (${formatNumber(nextEntry.odometerMiles, 1)} mi) ist vom ${formatDate(nextEntry.date)}.`;
+  }
+
+  return "";
+}
+
+function areOdometerValuesEqual(leftValue, rightValue) {
+  return Math.abs(leftValue - rightValue) < 0.05;
 }
 
 function updateLitersFieldState() {
   const isFirstEntry = state.entries.length === 0;
   elements.liters.required = !isFirstEntry;
   elements.liters.placeholder = isFirstEntry ? "Beim ersten Eintrag optional" : "z. B. 42.50";
-}
-
-function getHighestSavedOdometer(entries = state.entries) {
-  return entries.reduce(
-    (maxValue, currentEntry) => Math.max(maxValue, currentEntry.odometerMiles),
-    -Infinity,
-  );
 }
 
 function setDateFieldValue(isoValue) {
@@ -1013,7 +1050,7 @@ function normalizeImportedEntries(entries) {
     const isFirstLikeEntry = normalizedEntry.liters == null;
     const validationMessage = validateEntry(normalizedEntry, [], isFirstLikeEntry);
 
-    if (validationMessage && validationMessage !== "Der neue Meilenstand muss höher sein als der letzte gespeicherte.") {
+    if (validationMessage) {
       throw new Error("Invalid entry");
     }
 
@@ -1091,6 +1128,23 @@ function formatDate(value) {
     month: "2-digit",
     year: "numeric",
   }).format(date);
+}
+
+function isValidIsoDate(value) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+
+  const date = new Date(`${value}T12:00:00`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
+function compareIsoDates(leftValue, rightValue) {
+  if (!isValidIsoDate(leftValue) || !isValidIsoDate(rightValue)) {
+    return 0;
+  }
+
+  return leftValue.localeCompare(rightValue);
 }
 
 function getTodayIsoDate() {

@@ -438,6 +438,11 @@ input[type="date"] {
   line-height: 1.05;
 }
 
+.stat-value-large {
+  font-size: clamp(2.8rem, 14vw, 4.4rem);
+  line-height: 0.92;
+}
+
 .stat-hint {
   color: inherit;
   opacity: 0.8;

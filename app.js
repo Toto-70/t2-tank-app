@@ -702,6 +702,7 @@ function renderSummary() {
       elements.estimatedRangeDetail.textContent = "Es fehlen mindestens zwei Volltankungen";
       elements.maxOdometer.textContent = "Nicht berechenbar";
       elements.bufferedMaxOdometer.textContent = "Nicht berechenbar";
+      elements.bufferedMaxOdometer.classList.remove("stat-value-large");
       elements.summaryBasis.textContent = "Basis wird ab zwei Volltankungen angezeigt.";
     }
 
@@ -730,6 +731,7 @@ function renderRangeEstimate(latestEntry, consumptionLPerKm) {
   elements.estimatedRange.textContent = `${formatNumber(rangeEstimate.estimatedRangeActualMiles, 0)} mi`;
   elements.maxOdometer.textContent = `${formatNumber(rangeEstimate.maxOdometerMiles, 0)} mi`;
   elements.bufferedMaxOdometer.textContent = `${formatNumber(rangeEstimate.bufferedMaxOdometerMiles, 0)} mi`;
+  elements.bufferedMaxOdometer.classList.add("stat-value-large");
 
   return rangeEstimate.estimatedRangeKm;
 }

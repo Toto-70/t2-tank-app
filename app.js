@@ -1,6 +1,7 @@
 const STORAGE_KEY = "tank-tracker-state-v1";
 const APP_VERSION_FALLBACK = "lokal";
 const UPDATE_BUTTON_DEFAULT_TEXT = "Auf neue Version prüfen";
+const UPDATE_SUCCESS_STORAGE_KEY = "tank-tracker-update-success";
 const MILES_TO_KM = 1.609344;
 const TANK_CAPACITY_LITERS = 55;
 const ODOMETER_CORRECTION_FACTOR = 1.04;
@@ -101,6 +102,7 @@ function init() {
   elements.date.addEventListener("blur", handleDateFieldBlur);
 
   render();
+  showPendingUpdateSuccess();
   initializeServiceWorker();
   loadCachedAppVersion();
 }
@@ -747,16 +749,42 @@ function setUpdateButtonState(text, disabled = false) {
   elements.refreshApp.disabled = disabled;
 }
 
-function setUpdateStatus(text) {
+function setUpdateStatus(text, tone = "default") {
   elements.updateStatus.textContent = text;
   elements.updateStatus.hidden = !text;
+  elements.updateStatus.classList.toggle("update-status--success", tone === "success");
 }
 
-function showTemporaryUpdateStatus(text) {
-  setUpdateStatus(text);
+function showTemporaryUpdateStatus(text, options = {}) {
+  const { tone = "default", duration = 2500 } = options;
+  setUpdateStatus(text, tone);
   updateStatusResetTimeout = window.setTimeout(() => {
     setUpdateStatus("");
-  }, 2500);
+  }, duration);
+}
+
+function markUpdateSuccessForNextLoad() {
+  try {
+    sessionStorage.setItem(UPDATE_SUCCESS_STORAGE_KEY, "true");
+  } catch {
+    // No-op: the update remains successful even if session storage is unavailable.
+  }
+}
+
+function showPendingUpdateSuccess() {
+  try {
+    if (sessionStorage.getItem(UPDATE_SUCCESS_STORAGE_KEY) !== "true") {
+      return;
+    }
+
+    sessionStorage.removeItem(UPDATE_SUCCESS_STORAGE_KEY);
+    showTemporaryUpdateStatus("App erfolgreich aktualisiert.", {
+      tone: "success",
+      duration: 4000,
+    });
+  } catch {
+    // No-op: session storage may be unavailable in restricted browser modes.
+  }
 }
 
 function render() {
@@ -1563,6 +1591,7 @@ function observeServiceWorkerRegistration(registration) {
 
   navigator.serviceWorker.addEventListener("controllerchange", () => {
     if (isApplyingAppUpdate) {
+      markUpdateSuccessForNextLoad();
       window.location.reload();
     }
   });
@@ -1618,6 +1647,7 @@ async function loadAvailableAppVersion() {
     }
 
     await refreshAppShell(registration.active);
+    markUpdateSuccessForNextLoad();
     window.location.reload();
   } catch {
     availableAppVersion = null;

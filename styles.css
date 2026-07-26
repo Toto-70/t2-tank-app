@@ -9,6 +9,7 @@
   --line: rgba(16, 39, 47, 0.2);
   --accent: #00749d;
   --accent-soft: #d8eef6;
+  --success: #18764f;
   --danger: #9f2d28;
   --shadow: 0 18px 50px rgba(0, 102, 137, 0.16);
   --radius-lg: 28px;
@@ -393,6 +394,11 @@ input[type="date"] {
 .update-status {
   color: var(--muted);
   font-size: 0.85rem;
+}
+
+.update-status--success {
+  color: var(--success);
+  font-weight: 700;
 }
 
 .stat-card {

@@ -358,6 +358,19 @@ input[type="date"] {
   line-height: 1.45;
 }
 
+.chart-launch {
+  margin-top: 16px;
+}
+
+.chart-launch .button {
+  width: 100%;
+}
+
+.chart-launch .button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .app-meta {
   display: flex;
   align-items: center;
@@ -457,6 +470,46 @@ input[type="date"] {
   border: 1px dashed rgba(21, 38, 32, 0.24);
 }
 
+.chart-dialog {
+  width: min(calc(100% - 24px), 980px);
+  max-width: none;
+  max-height: calc(100dvh - 24px);
+  padding: 0;
+  color: var(--text);
+  background: transparent;
+  border: none;
+}
+
+.chart-dialog::backdrop {
+  background: rgba(16, 39, 47, 0.62);
+  backdrop-filter: blur(5px);
+}
+
+.chart-dialog-content {
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  padding: 22px;
+  border-radius: var(--radius-lg);
+  background: #fffdf8;
+  border: 1px solid rgba(16, 39, 47, 0.14);
+  box-shadow: 0 24px 64px rgba(0, 102, 137, 0.24);
+}
+
+.chart-dialog-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.chart-dialog-header .section-heading {
+  margin-bottom: 16px;
+}
+
+.chart-dialog-close {
+  flex: 0 0 auto;
+}
+
 .consumption-chart-region {
   display: grid;
   gap: 12px;
@@ -489,6 +542,32 @@ input[type="date"] {
 
 .chart-legend-line--average {
   border-top: 2px dashed #7d6151;
+}
+
+.chart-legend-band {
+  display: inline-block;
+  width: 18px;
+  height: 12px;
+  border-radius: 4px;
+  border: 1px solid rgba(16, 39, 47, 0.12);
+}
+
+.chart-legend-band--low,
+.chart-band--low {
+  background: #e8f6ef;
+  fill: #e8f6ef;
+}
+
+.chart-legend-band--medium,
+.chart-band--medium {
+  background: #faedd7;
+  fill: #faedd7;
+}
+
+.chart-legend-band--high,
+.chart-band--high {
+  background: #f8e2dd;
+  fill: #f8e2dd;
 }
 
 .consumption-chart-scroll {
@@ -552,11 +631,6 @@ input[type="date"] {
   fill: var(--accent-soft);
   outline: none;
   stroke-width: 5;
-}
-
-.chart-summary {
-  color: var(--muted);
-  line-height: 1.45;
 }
 
 .history-list {
@@ -667,8 +741,49 @@ input[type="date"] {
     padding: 18px;
   }
 
+  .chart-dialog-content {
+    padding: 18px;
+  }
+
+  .chart-dialog-header {
+    display: grid;
+  }
+
+  .chart-dialog-close {
+    grid-row: 1;
+    justify-self: end;
+  }
+
+  .chart-dialog-header .section-heading {
+    grid-row: 2;
+  }
+
   .history-actions {
     justify-content: flex-start;
+  }
+}
+
+@media (orientation: landscape) {
+  .chart-dialog {
+    width: calc(100% - 20px);
+    max-height: calc(100dvh - 16px);
+  }
+
+  .chart-dialog-content {
+    max-height: calc(100dvh - 16px);
+    padding: 14px 18px;
+  }
+
+  .chart-dialog-header .section-heading {
+    margin-bottom: 8px;
+  }
+
+  .consumption-chart-scroll {
+    overflow-x: hidden;
+  }
+
+  .consumption-chart {
+    min-width: 0;
   }
 }
 

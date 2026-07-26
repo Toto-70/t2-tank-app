@@ -48,37 +48,14 @@
       </div>
 
       <p class="summary-basis" id="summary-basis">Basis wird ab zwei Volltankungen angezeigt.</p>
+      <div class="chart-launch">
+        <button class="button button-secondary" type="button" id="open-consumption-chart">
+          Verbrauchsgrafik anzeigen
+        </button>
+      </div>
       <div class="app-meta">
         <span class="app-version" id="app-version">Version</span>
         <button class="button button-ghost button-small" type="button" id="refresh-app" hidden>Neue Version laden</button>
-      </div>
-    </section>
-
-    <section class="panel">
-      <div class="section-heading">
-        <h2>Verbrauchsentwicklung</h2>
-        <p>Die Breite jedes Abschnitts entspricht der tatsächlich gefahrenen Strecke.</p>
-      </div>
-
-      <div id="consumption-chart-empty" class="empty-state">
-        Die Grafik erscheint nach dem zweiten Volltankvorgang.
-      </div>
-
-      <div class="consumption-chart-region" id="consumption-chart-region" hidden>
-        <div class="chart-legend" aria-hidden="true">
-          <span><i class="chart-legend-line chart-legend-line--consumption"></i>Verbrauch je Strecke</span>
-          <span><i class="chart-legend-line chart-legend-line--average"></i>Gesamtdurchschnitt</span>
-        </div>
-        <div class="consumption-chart-scroll">
-          <svg
-            class="consumption-chart"
-            id="consumption-chart"
-            viewBox="0 0 720 360"
-            role="img"
-            aria-labelledby="consumption-chart-title consumption-chart-description"
-          ></svg>
-        </div>
-        <p class="chart-summary" id="consumption-chart-summary"></p>
       </div>
     </section>
 
@@ -154,6 +131,47 @@
       <p class="range-dialog-title" id="range-dialog-title"></p>
       <p class="range-dialog-detail" id="range-dialog-detail"></p>
       <button class="button button-primary range-dialog-close" type="button" id="range-dialog-close">OK</button>
+    </div>
+  </dialog>
+
+  <dialog class="chart-dialog" id="consumption-chart-dialog" aria-labelledby="consumption-dialog-title">
+    <div class="chart-dialog-content">
+      <div class="chart-dialog-header">
+        <div class="section-heading">
+          <h2 id="consumption-dialog-title">Verbrauchsentwicklung</h2>
+          <p>Die Breite jedes Abschnitts entspricht der tatsächlich gefahrenen Strecke.</p>
+        </div>
+        <button
+          class="button button-ghost button-small chart-dialog-close"
+          type="button"
+          id="close-consumption-chart"
+        >
+          Schließen
+        </button>
+      </div>
+
+      <div id="consumption-chart-empty" class="empty-state">
+        Die Grafik erscheint nach dem zweiten Volltankvorgang.
+      </div>
+
+      <div class="consumption-chart-region" id="consumption-chart-region" hidden>
+        <div class="chart-legend" aria-hidden="true">
+          <span><i class="chart-legend-line chart-legend-line--consumption"></i>Verbrauch je Strecke</span>
+          <span><i class="chart-legend-line chart-legend-line--average"></i>Gesamtdurchschnitt</span>
+          <span><i class="chart-legend-band chart-legend-band--low"></i>unter 14</span>
+          <span><i class="chart-legend-band chart-legend-band--medium"></i>14 bis unter 15</span>
+          <span><i class="chart-legend-band chart-legend-band--high"></i>ab 15 l / 100 km</span>
+        </div>
+        <div class="consumption-chart-scroll">
+          <svg
+            class="consumption-chart"
+            id="consumption-chart"
+            viewBox="0 0 720 360"
+            role="img"
+            aria-labelledby="consumption-chart-title consumption-chart-description"
+          ></svg>
+        </div>
+      </div>
     </div>
   </dialog>
 

@@ -10,7 +10,7 @@ Kleine, lokale Web-App zum Erfassen von Volltankvorgängen mit Meilentacho.
 - Tachostand per Foto erfassen und über einen OpenAI-Vision-Worker auslesen lassen
 - Automatische Umrechnung von Meilen nach Kilometern für die Verbrauchsberechnung
 - Anzeige von letztem Verbrauch und Durchschnittsverbrauch in `l / 100 km`
-- Streckenproportionale Verlaufsgrafik für den Verbrauch zwischen den Volltankungen
+- Streckenproportionale Verlaufsgrafik im Overlay mit farbigen Verbrauchszonen
 - Berechnung der geschätzten Reichweite und des maximalen Meilenstands nach dem Tanken
 - Fallback-Verbrauch von `15 l / 100 km` für die Reichweitenberechnung nach dem ersten Eintrag
 - Lokale Speicherung im Browser via `localStorage`

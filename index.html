@@ -53,10 +53,6 @@
           Verbrauchsgrafik anzeigen
         </button>
       </div>
-      <div class="app-meta">
-        <span class="app-version" id="app-version">Version</span>
-        <button class="button button-ghost button-small" type="button" id="refresh-app" hidden>Neue Version laden</button>
-      </div>
     </section>
 
     <section class="panel panel-form">
@@ -124,6 +120,11 @@
         <input id="import-file" type="file" accept="application/json" hidden>
       </div>
     </section>
+
+    <footer class="app-meta">
+      <span class="app-version" id="app-version">Version</span>
+      <button class="button button-ghost button-small" type="button" id="refresh-app">Auf neue Version prüfen</button>
+    </footer>
   </main>
 
   <dialog class="range-dialog" id="range-dialog" aria-labelledby="range-dialog-title">

@@ -1,5 +1,6 @@
 const STORAGE_KEY = "tank-tracker-state-v1";
 const APP_VERSION_FALLBACK = "lokal";
+const UPDATE_BUTTON_DEFAULT_TEXT = "Auf neue Version prüfen";
 const MILES_TO_KM = 1.609344;
 const TANK_CAPACITY_LITERS = 55;
 const ODOMETER_CORRECTION_FACTOR = 1.04;
@@ -60,7 +61,11 @@ const elements = {
 
 const state = loadState();
 let waitingServiceWorker = null;
+let serviceWorkerRegistration = null;
 let currentAppVersion = APP_VERSION_FALLBACK;
+let availableAppVersion = null;
+let updateButtonResetTimeout = null;
+let isApplyingAppUpdate = false;
 let odometerPhotoMode = "entry";
 
 init();
@@ -95,8 +100,8 @@ function init() {
   elements.date.addEventListener("blur", handleDateFieldBlur);
 
   render();
-  registerServiceWorker();
-  loadAppVersion();
+  initializeServiceWorker();
+  loadCachedAppVersion();
 }
 
 function handleSubmit(event) {
@@ -325,11 +330,54 @@ function deleteEntry(entryId) {
   render();
 }
 
-function handleRefreshApp() {
+async function handleRefreshApp() {
+  clearTimeout(updateButtonResetTimeout);
+
   if (waitingServiceWorker) {
-    waitingServiceWorker.postMessage({ type: "SKIP_WAITING" });
-  } else {
-    window.location.reload();
+    activateWaitingServiceWorker();
+    return;
+  }
+
+  if (availableAppVersion) {
+    await loadAvailableAppVersion();
+    return;
+  }
+
+  setUpdateButtonState("Prüfe …", true);
+
+  try {
+    const response = await fetch(`./version.json?check=${Date.now()}`, { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error(`Versionsprüfung fehlgeschlagen (${response.status}).`);
+    }
+
+    const versionInfo = await response.json();
+    const remoteVersion = normalizeAppVersion(versionInfo.version);
+    if (!remoteVersion) {
+      throw new Error("Ungültige Versionsinformation.");
+    }
+
+    const registration = serviceWorkerRegistration || await navigator.serviceWorker.getRegistration();
+    const updatedWorker = registration
+      ? await updateServiceWorkerRegistration(registration)
+      : null;
+    const workerToActivate = registration?.waiting || updatedWorker;
+
+    if (workerToActivate?.state === "installed") {
+      availableAppVersion = remoteVersion;
+      markServiceWorkerUpdateAvailable(workerToActivate);
+      return;
+    }
+
+    if (remoteVersion === currentAppVersion) {
+      showTemporaryUpdateButtonState("Version ist aktuell");
+      return;
+    }
+
+    availableAppVersion = remoteVersion;
+    setUpdateButtonState("Neue Version laden");
+  } catch {
+    showTemporaryUpdateButtonState("Keine Verbindung");
   }
 }
 
@@ -664,20 +712,41 @@ function handleDateFieldBlur() {
   }
 }
 
-async function loadAppVersion() {
+async function loadCachedAppVersion() {
+  if (!("caches" in window)) {
+    return;
+  }
+
   try {
-    const response = await fetch("./version.json", { cache: "no-store" });
-    if (!response.ok) {
+    const response = await caches.match("./version.json");
+    if (!response?.ok) {
       return;
     }
 
     const versionInfo = await response.json();
-    if (typeof versionInfo.version === "string" && versionInfo.version.trim()) {
-      setAppVersion(versionInfo.version.trim());
+    const cachedVersion = normalizeAppVersion(versionInfo.version);
+    if (cachedVersion) {
+      setAppVersion(cachedVersion);
     }
   } catch {
-    // No-op: fallback version remains visible for local or offline use.
+    // No-op: reading the cached version must never delay app startup.
   }
+}
+
+function normalizeAppVersion(version) {
+  return typeof version === "string" ? version.trim() : "";
+}
+
+function setUpdateButtonState(text, disabled = false) {
+  elements.refreshApp.textContent = text;
+  elements.refreshApp.disabled = disabled;
+}
+
+function showTemporaryUpdateButtonState(text) {
+  setUpdateButtonState(text, true);
+  updateButtonResetTimeout = window.setTimeout(() => {
+    setUpdateButtonState(UPDATE_BUTTON_DEFAULT_TEXT);
+  }, 2500);
 }
 
 function render() {
@@ -1444,38 +1513,160 @@ function getTodayIsoDate() {
   return new Date().toISOString().slice(0, 10);
 }
 
-async function registerServiceWorker() {
+async function initializeServiceWorker() {
   if (!("serviceWorker" in navigator)) {
+    setUpdateButtonState("Updates nicht unterstützt", true);
     return;
   }
 
   try {
-    const registration = await navigator.serviceWorker.register("./sw.js");
-    registration.update().catch(() => {});
-
-    if (registration.waiting) {
-      waitingServiceWorker = registration.waiting;
-      elements.refreshApp.hidden = false;
+    serviceWorkerRegistration = await navigator.serviceWorker.getRegistration();
+    if (!serviceWorkerRegistration) {
+      serviceWorkerRegistration = await navigator.serviceWorker.register("./sw.js");
     }
 
-    registration.addEventListener("updatefound", () => {
-      const installingWorker = registration.installing;
-      if (!installingWorker) {
-        return;
-      }
-
-      installingWorker.addEventListener("statechange", () => {
-        if (installingWorker.state === "installed" && navigator.serviceWorker.controller) {
-          waitingServiceWorker = registration.waiting || installingWorker;
-          elements.refreshApp.hidden = false;
-        }
-      });
-    });
-
-    navigator.serviceWorker.addEventListener("controllerchange", () => {
-      window.location.reload();
-    });
+    observeServiceWorkerRegistration(serviceWorkerRegistration);
   } catch {
-    // No-op: app remains usable without offline cache.
+    setUpdateButtonState("Updates nicht verfügbar", true);
   }
+}
+
+function observeServiceWorkerRegistration(registration) {
+  if (registration.waiting) {
+    markServiceWorkerUpdateAvailable(registration.waiting);
+  }
+
+  if (registration.installing) {
+    observeInstallingServiceWorker(registration, registration.installing);
+  }
+
+  registration.addEventListener("updatefound", () => {
+    const installingWorker = registration.installing;
+    if (!installingWorker) {
+      return;
+    }
+
+    observeInstallingServiceWorker(registration, installingWorker);
+  });
+
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (isApplyingAppUpdate) {
+      window.location.reload();
+    }
+  });
+}
+
+function observeInstallingServiceWorker(registration, installingWorker) {
+  const handleStateChange = () => {
+    if (installingWorker.state === "installed" && navigator.serviceWorker.controller) {
+      markServiceWorkerUpdateAvailable(registration.waiting || installingWorker);
+    }
+  };
+
+  installingWorker.addEventListener("statechange", handleStateChange);
+  handleStateChange();
+}
+
+function markServiceWorkerUpdateAvailable(worker) {
+  waitingServiceWorker = worker;
+  setUpdateButtonState("Neue Version laden");
+}
+
+function activateWaitingServiceWorker() {
+  isApplyingAppUpdate = true;
+  setUpdateButtonState("Neue Version wird geladen …", true);
+  waitingServiceWorker.postMessage({ type: "SKIP_WAITING" });
+}
+
+async function loadAvailableAppVersion() {
+  setUpdateButtonState("Neue Version wird geladen …", true);
+
+  try {
+    const registration = serviceWorkerRegistration || await navigator.serviceWorker.getRegistration();
+    if (!registration) {
+      throw new Error("Kein Service Worker registriert.");
+    }
+
+    serviceWorkerRegistration = registration;
+    const updatedWorker = await updateServiceWorkerRegistration(registration);
+    const workerToActivate = registration.waiting || updatedWorker;
+
+    if (workerToActivate && workerToActivate.state === "installed") {
+      waitingServiceWorker = workerToActivate;
+      activateWaitingServiceWorker();
+      return;
+    }
+
+    if (!registration.active) {
+      throw new Error("Kein aktiver Service Worker verfügbar.");
+    }
+
+    await refreshAppShell(registration.active);
+    window.location.reload();
+  } catch {
+    availableAppVersion = null;
+    showTemporaryUpdateButtonState("Update fehlgeschlagen");
+  }
+}
+
+async function updateServiceWorkerRegistration(registration) {
+  let installationPromise = null;
+  const handleUpdateFound = () => {
+    if (registration.installing) {
+      installationPromise = waitForServiceWorkerInstallation(registration.installing);
+    }
+  };
+
+  registration.addEventListener("updatefound", handleUpdateFound);
+  try {
+    await registration.update();
+
+    if (registration.waiting) {
+      return registration.waiting;
+    }
+
+    if (registration.installing && !installationPromise) {
+      installationPromise = waitForServiceWorkerInstallation(registration.installing);
+    }
+
+    return installationPromise ? await installationPromise : null;
+  } finally {
+    registration.removeEventListener("updatefound", handleUpdateFound);
+  }
+}
+
+function waitForServiceWorkerInstallation(worker) {
+  if (worker.state === "installed") {
+    return Promise.resolve(worker);
+  }
+
+  return new Promise((resolve, reject) => {
+    worker.addEventListener("statechange", () => {
+      if (worker.state === "installed") {
+        resolve(worker);
+      } else if (worker.state === "redundant") {
+        reject(new Error("Service-Worker-Installation fehlgeschlagen."));
+      }
+    });
+  });
+}
+
+function refreshAppShell(worker) {
+  return new Promise((resolve, reject) => {
+    const messageChannel = new MessageChannel();
+    const timeout = window.setTimeout(() => {
+      reject(new Error("Zeitüberschreitung beim Laden der neuen Version."));
+    }, 30000);
+
+    messageChannel.port1.onmessage = (event) => {
+      clearTimeout(timeout);
+      if (event.data?.ok) {
+        resolve();
+      } else {
+        reject(new Error(event.data?.message || "App-Dateien konnten nicht aktualisiert werden."));
+      }
+    };
+
+    worker.postMessage({ type: "REFRESH_APP_SHELL" }, [messageChannel.port2]);
+  });
 }

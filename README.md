@@ -18,7 +18,7 @@ Kleine, lokale Web-App zum Erfassen von Volltankvorgängen mit Meilentacho.
 - Feste Annahme eines Tankvolumens von `55 l`
 - Fester Tachokorrekturfaktor von `1,04` für die reale Strecke
 - JSON-Export und JSON-Import für Datensicherung
-- Sichtbare App-Version und Update-Hinweis in der Oberfläche
+- Sichtbare App-Version und manuelle Update-Prüfung in der Oberfläche
 - Build-Version aus Datum und GitHub-Actions-Run-Nummer auf GitHub Pages
 
 ## Nutzung
@@ -38,6 +38,8 @@ Das Projekt ist für GitHub Pages per GitHub Actions vorbereitet.
 5. Die App ist danach unter einer URL wie `https://Toto-70.github.io/t2-tank-app/` erreichbar.
 
 Die App-Daten bleiben weiterhin lokal auf dem jeweiligen iPhone im Browser bzw. in der installierten PWA gespeichert.
+
+Die installierte App startet aus ihrem Offline-Cache und prüft nicht selbstständig auf neue Versionen. Über `Auf neue Version prüfen` wird die Netzwerkprüfung bewusst angestoßen; eine gefundene Version wird erst mit einem zweiten Klick geladen.
 
 ## Tachofoto-Erkennung mit OpenAI Vision
 

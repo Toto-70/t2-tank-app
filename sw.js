@@ -1,4 +1,4 @@
-const CACHE_NAME = "tank-tracker-v50";
+const CACHE_NAME = "tank-tracker-v51";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -13,10 +13,7 @@ const APP_SHELL = [
 ];
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)),
-  );
-  self.skipWaiting();
+  event.waitUntil(refreshAppShell());
 });
 
 self.addEventListener("activate", (event) => {
@@ -35,6 +32,16 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("message", (event) => {
   if (event.data?.type === "SKIP_WAITING") {
     self.skipWaiting();
+    return;
+  }
+
+  if (event.data?.type === "REFRESH_APP_SHELL") {
+    const replyPort = event.ports[0];
+    event.waitUntil(
+      refreshAppShell()
+        .then(() => replyPort?.postMessage({ ok: true }))
+        .catch((error) => replyPort?.postMessage({ ok: false, message: error.message })),
+    );
   }
 });
 
@@ -44,28 +51,17 @@ self.addEventListener("fetch", (event) => {
   }
 
   const requestUrl = new URL(event.request.url);
-  const isHtmlRequest =
-    event.request.mode === "navigate" ||
-    requestUrl.pathname.endsWith(".html") ||
-    requestUrl.pathname === "/";
   const isSameOrigin = requestUrl.origin === self.location.origin;
-
-  event.respondWith(
-    isHtmlRequest || isSameOrigin ? networkFirst(event.request) : cacheFirst(event.request),
-  );
-});
-
-async function networkFirst(request) {
-  try {
-    const response = await fetch(request);
-    const cache = await caches.open(CACHE_NAME);
-    cache.put(request, response.clone());
-    return response;
-  } catch {
-    const cachedResponse = await caches.match(request);
-    return cachedResponse || caches.match("./index.html");
+  if (!isSameOrigin) {
+    return;
   }
-}
+
+  const isManualUpdateCheck =
+    requestUrl.pathname.endsWith("/version.json") &&
+    requestUrl.searchParams.has("check");
+
+  event.respondWith(isManualUpdateCheck ? fetch(event.request) : cacheFirst(event.request));
+});
 
 async function cacheFirst(request) {
   const cachedResponse = await caches.match(request);
@@ -73,8 +69,34 @@ async function cacheFirst(request) {
     return cachedResponse;
   }
 
-  const response = await fetch(request);
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      const cache = await caches.open(CACHE_NAME);
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch {
+    if (request.mode === "navigate") {
+      const fallbackResponse = await caches.match("./index.html");
+      if (fallbackResponse) {
+        return fallbackResponse;
+      }
+    }
+    throw new Error(`Nicht im Offline-Cache: ${request.url}`);
+  }
+}
+
+async function refreshAppShell() {
   const cache = await caches.open(CACHE_NAME);
-  cache.put(request, response.clone());
-  return response;
+  await Promise.all(
+    APP_SHELL.map(async (resource) => {
+      const resourceUrl = new URL(resource, self.registration.scope);
+      const response = await fetch(resourceUrl, { cache: "reload" });
+      if (!response.ok) {
+        throw new Error(`${resource} konnte nicht geladen werden (${response.status}).`);
+      }
+      await cache.put(resourceUrl, response);
+    }),
+  );
 }

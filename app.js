@@ -42,6 +42,10 @@ const elements = {
   bufferedMaxOdometerCard: document.getElementById("buffered-max-odometer-card"),
   bufferedMaxOdometer: document.getElementById("buffered-max-odometer"),
   summaryBasis: document.getElementById("summary-basis"),
+  consumptionChartEmpty: document.getElementById("consumption-chart-empty"),
+  consumptionChartRegion: document.getElementById("consumption-chart-region"),
+  consumptionChart: document.getElementById("consumption-chart"),
+  consumptionChartSummary: document.getElementById("consumption-chart-summary"),
   rangeDialog: document.getElementById("range-dialog"),
   rangeDialogTitle: document.getElementById("range-dialog-title"),
   rangeDialogDetail: document.getElementById("range-dialog-detail"),
@@ -671,6 +675,7 @@ function render() {
   updateLitersFieldState();
   renderTourName();
   renderSummary();
+  renderConsumptionChart();
   renderHistory();
 }
 
@@ -723,6 +728,204 @@ function renderSummary() {
   const estimatedRangeKm = renderRangeEstimate(latestEntry, avgConsumptionLPerKm);
   elements.estimatedRangeDetail.textContent = `${formatNumber(estimatedRangeKm, 0)} km real mit ${TANK_CAPACITY_LITERS} l`;
   elements.summaryBasis.textContent = `Basis: ${formatNumber(totalDistanceKm, 0)} km aus ${totalTankEvents} Tankvorgängen`;
+}
+
+function renderConsumptionChart() {
+  const intervals = getIntervals(state.entries);
+
+  if (!intervals.length) {
+    elements.consumptionChartEmpty.hidden = false;
+    elements.consumptionChartRegion.hidden = true;
+    elements.consumptionChart.replaceChildren();
+    elements.consumptionChartSummary.textContent = "";
+    return;
+  }
+
+  elements.consumptionChartEmpty.hidden = true;
+  elements.consumptionChartRegion.hidden = false;
+
+  const chartWidth = 720;
+  const chartHeight = 360;
+  const margin = { top: 28, right: 20, bottom: 62, left: 62 };
+  const plotWidth = chartWidth - margin.left - margin.right;
+  const plotHeight = chartHeight - margin.top - margin.bottom;
+  const cumulativeDistances = [];
+  let totalDistanceKm = 0;
+
+  intervals.forEach((interval) => {
+    totalDistanceKm += interval.actualDistanceKm;
+    cumulativeDistances.push(totalDistanceKm);
+  });
+
+  const consumptionValues = intervals.map((interval) => interval.consumptionLPerKm * 100);
+  const averageConsumption = getAverageConsumption(intervals) * 100;
+  const yDomain = getConsumptionChartYDomain([...consumptionValues, averageConsumption]);
+  const scaleX = (distanceKm) => margin.left + (distanceKm / totalDistanceKm) * plotWidth;
+  const scaleY = (consumption) =>
+    margin.top + ((yDomain.max - consumption) / (yDomain.max - yDomain.min)) * plotHeight;
+
+  const title = createSvgElement("title", {
+    id: "consumption-chart-title",
+  });
+  title.textContent = "Verbrauchsentwicklung über die gefahrene Strecke";
+
+  const description = createSvgElement("desc", {
+    id: "consumption-chart-description",
+  });
+  description.textContent =
+    `${intervals.length} Verbrauchsintervalle über ${formatNumber(totalDistanceKm, 0)} Kilometer. ` +
+    "Breitere Abschnitte stehen für längere Strecken zwischen zwei Volltankungen.";
+
+  const grid = createSvgElement("g", { class: "chart-grid", "aria-hidden": "true" });
+  const yTickCount = 4;
+
+  for (let index = 0; index <= yTickCount; index += 1) {
+    const value = yDomain.min + ((yDomain.max - yDomain.min) * index) / yTickCount;
+    const y = scaleY(value);
+    grid.append(
+      createSvgElement("line", {
+        x1: margin.left,
+        y1: y,
+        x2: chartWidth - margin.right,
+        y2: y,
+      }),
+      createSvgText(margin.left - 10, y + 4, formatNumber(value, 1), {
+        class: "chart-axis-label chart-axis-label--y",
+        "text-anchor": "end",
+      }),
+    );
+  }
+
+  const xTickCount = 4;
+  for (let index = 0; index <= xTickCount; index += 1) {
+    const distanceKm = (totalDistanceKm * index) / xTickCount;
+    const x = scaleX(distanceKm);
+    grid.append(
+      createSvgElement("line", {
+        x1: x,
+        y1: margin.top,
+        x2: x,
+        y2: chartHeight - margin.bottom,
+      }),
+      createSvgText(x, chartHeight - margin.bottom + 24, formatNumber(distanceKm, 0), {
+        class: "chart-axis-label",
+        "text-anchor": "middle",
+      }),
+    );
+  }
+
+  const axisLabels = createSvgElement("g", { "aria-hidden": "true" });
+  axisLabels.append(
+    createSvgText(17, margin.top + plotHeight / 2, "l / 100 km", {
+      class: "chart-axis-title",
+      "text-anchor": "middle",
+      transform: `rotate(-90 17 ${margin.top + plotHeight / 2})`,
+    }),
+    createSvgText(margin.left + plotWidth / 2, chartHeight - 12, "Gefahrene Strecke seit dem ersten Eintrag (km)", {
+      class: "chart-axis-title",
+      "text-anchor": "middle",
+    }),
+  );
+
+  const averageLine = createSvgElement("line", {
+    class: "chart-average-line",
+    x1: margin.left,
+    y1: scaleY(averageConsumption),
+    x2: chartWidth - margin.right,
+    y2: scaleY(averageConsumption),
+    "aria-hidden": "true",
+  });
+
+  const pathData = [];
+  intervals.forEach((interval, index) => {
+    const startDistanceKm = index === 0 ? 0 : cumulativeDistances[index - 1];
+    const endDistanceKm = cumulativeDistances[index];
+    const consumption = consumptionValues[index];
+    const startX = scaleX(startDistanceKm);
+    const endX = scaleX(endDistanceKm);
+    const y = scaleY(consumption);
+
+    if (index === 0) {
+      pathData.push(`M ${startX} ${y}`);
+    } else {
+      pathData.push(`L ${startX} ${y}`);
+    }
+    pathData.push(`L ${endX} ${y}`);
+  });
+
+  const consumptionPath = createSvgElement("path", {
+    class: "chart-consumption-line",
+    d: pathData.join(" "),
+    fill: "none",
+    "aria-hidden": "true",
+  });
+
+  const points = createSvgElement("g", { class: "chart-points" });
+  intervals.forEach((interval, index) => {
+    const consumption = consumptionValues[index];
+    const point = createSvgElement("circle", {
+      class: "chart-point",
+      cx: scaleX(cumulativeDistances[index]),
+      cy: scaleY(consumption),
+      r: 6,
+      tabindex: "0",
+      role: "img",
+      "aria-label":
+        `${formatDate(interval.entry.date)}: ${formatNumber(consumption, 2)} Liter pro 100 Kilometer ` +
+        `auf ${formatNumber(interval.actualDistanceKm, 0)} Kilometern.`,
+    });
+    const pointTitle = createSvgElement("title");
+    pointTitle.textContent =
+      `${formatDate(interval.entry.date)} · ${formatNumber(consumption, 2)} l / 100 km · ` +
+      `${formatNumber(interval.actualDistanceKm, 0)} km`;
+    point.appendChild(pointTitle);
+    points.appendChild(point);
+  });
+
+  elements.consumptionChart.replaceChildren(
+    title,
+    description,
+    grid,
+    axisLabels,
+    averageLine,
+    consumptionPath,
+    points,
+  );
+
+  const latestConsumption = consumptionValues.at(-1);
+  elements.consumptionChartSummary.textContent =
+    `Zuletzt ${formatNumber(latestConsumption, 2)} l / 100\u00a0km auf ` +
+    `${formatNumber(intervals.at(-1).actualDistanceKm, 0)} km. ` +
+    `Gesamtdurchschnitt: ${formatNumber(averageConsumption, 2)} l / 100\u00a0km.`;
+}
+
+function getConsumptionChartYDomain(values) {
+  const minimum = Math.min(...values);
+  const maximum = Math.max(...values);
+  const spread = Math.max(maximum - minimum, 1);
+  const padding = Math.max(spread * 0.2, 0.5);
+  let domainMin = Math.max(0, Math.floor((minimum - padding) * 2) / 2);
+  let domainMax = Math.ceil((maximum + padding) * 2) / 2;
+
+  if (domainMax - domainMin < 2) {
+    const center = (domainMin + domainMax) / 2;
+    domainMin = Math.max(0, center - 1);
+    domainMax = center + 1;
+  }
+
+  return { min: domainMin, max: domainMax };
+}
+
+function createSvgElement(tagName, attributes = {}) {
+  const element = document.createElementNS("http://www.w3.org/2000/svg", tagName);
+  Object.entries(attributes).forEach(([name, value]) => element.setAttribute(name, String(value)));
+  return element;
+}
+
+function createSvgText(x, y, text, attributes = {}) {
+  const element = createSvgElement("text", { x, y, ...attributes });
+  element.textContent = text;
+  return element;
 }
 
 function renderRangeEstimate(latestEntry, consumptionLPerKm) {

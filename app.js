@@ -5,6 +5,10 @@ const TANK_CAPACITY_LITERS = 55;
 const ODOMETER_CORRECTION_FACTOR = 1.04;
 const RANGE_BUFFER_KM = 25;
 const FALLBACK_CONSUMPTION_L_PER_100_KM = 15;
+const LOW_CONSUMPTION_LIMIT_L_PER_100_KM = 14;
+const HIGH_CONSUMPTION_LIMIT_L_PER_100_KM = 15;
+const CONSUMPTION_CHART_X_INTERVAL_KM = 500;
+const CONSUMPTION_CHART_Y_INTERVAL_LITERS = 1;
 const VISION_ENDPOINT_STORAGE_KEY = "tank-tracker-vision-endpoint-v1";
 const DEFAULT_VISION_ENDPOINT = "https://t2-tank-odometer.thorsten-762.workers.dev/";
 const ODOMETER_IMAGE_MAX_EDGE = 1600;
@@ -42,10 +46,12 @@ const elements = {
   bufferedMaxOdometerCard: document.getElementById("buffered-max-odometer-card"),
   bufferedMaxOdometer: document.getElementById("buffered-max-odometer"),
   summaryBasis: document.getElementById("summary-basis"),
+  openConsumptionChart: document.getElementById("open-consumption-chart"),
+  consumptionChartDialog: document.getElementById("consumption-chart-dialog"),
+  closeConsumptionChart: document.getElementById("close-consumption-chart"),
   consumptionChartEmpty: document.getElementById("consumption-chart-empty"),
   consumptionChartRegion: document.getElementById("consumption-chart-region"),
   consumptionChart: document.getElementById("consumption-chart"),
-  consumptionChartSummary: document.getElementById("consumption-chart-summary"),
   rangeDialog: document.getElementById("range-dialog"),
   rangeDialogTitle: document.getElementById("range-dialog-title"),
   rangeDialogDetail: document.getElementById("range-dialog-detail"),
@@ -79,6 +85,9 @@ function init() {
   elements.bufferedMaxOdometerCard.addEventListener("keydown", (event) => handleRangeCheckKeydown(event, "buffered"));
   elements.rangeDialogClose.addEventListener("click", closeRangeDialog);
   elements.rangeDialog.addEventListener("click", handleRangeDialogClick);
+  elements.openConsumptionChart.addEventListener("click", showConsumptionChart);
+  elements.closeConsumptionChart.addEventListener("click", closeConsumptionChart);
+  elements.consumptionChartDialog.addEventListener("click", handleConsumptionChartDialogClick);
   elements.odometerPhotoInput.addEventListener("change", handleOdometerPhotoChange);
   elements.date.addEventListener("focus", handleDateFieldActivate);
   elements.date.addEventListener("click", handleDateFieldActivate);
@@ -732,12 +741,15 @@ function renderSummary() {
 
 function renderConsumptionChart() {
   const intervals = getIntervals(state.entries);
+  elements.openConsumptionChart.disabled = !intervals.length;
+  elements.openConsumptionChart.textContent = intervals.length
+    ? "Verbrauchsgrafik anzeigen"
+    : "Grafik ab 2. Volltankung";
 
   if (!intervals.length) {
     elements.consumptionChartEmpty.hidden = false;
     elements.consumptionChartRegion.hidden = true;
     elements.consumptionChart.replaceChildren();
-    elements.consumptionChartSummary.textContent = "";
     return;
   }
 
@@ -759,8 +771,15 @@ function renderConsumptionChart() {
 
   const consumptionValues = intervals.map((interval) => interval.consumptionLPerKm * 100);
   const averageConsumption = getAverageConsumption(intervals) * 100;
-  const yDomain = getConsumptionChartYDomain([...consumptionValues, averageConsumption]);
-  const scaleX = (distanceKm) => margin.left + (distanceKm / totalDistanceKm) * plotWidth;
+  const yDomain = getConsumptionChartYDomain([
+    ...consumptionValues,
+    averageConsumption,
+    LOW_CONSUMPTION_LIMIT_L_PER_100_KM,
+    HIGH_CONSUMPTION_LIMIT_L_PER_100_KM,
+  ]);
+  const xDomainMaxKm =
+    Math.ceil(totalDistanceKm / CONSUMPTION_CHART_X_INTERVAL_KM) * CONSUMPTION_CHART_X_INTERVAL_KM;
+  const scaleX = (distanceKm) => margin.left + (distanceKm / xDomainMaxKm) * plotWidth;
   const scaleY = (consumption) =>
     margin.top + ((yDomain.max - consumption) / (yDomain.max - yDomain.min)) * plotHeight;
 
@@ -774,13 +793,45 @@ function renderConsumptionChart() {
   });
   description.textContent =
     `${intervals.length} Verbrauchsintervalle über ${formatNumber(totalDistanceKm, 0)} Kilometer. ` +
-    "Breitere Abschnitte stehen für längere Strecken zwischen zwei Volltankungen.";
+    "Breitere Abschnitte stehen für längere Strecken zwischen zwei Volltankungen. " +
+    "Grün markiert weniger als 14, Gelb 14 bis unter 15 und Rot mindestens 15 Liter pro 100 Kilometer. " +
+    "Das Raster ist horizontal in 500 Kilometer und vertikal in einem Liter pro 100 Kilometer unterteilt.";
+
+  const bands = createSvgElement("g", { class: "chart-bands", "aria-hidden": "true" });
+  appendConsumptionChartBand(
+    bands,
+    yDomain.min,
+    Math.min(LOW_CONSUMPTION_LIMIT_L_PER_100_KM, yDomain.max),
+    "chart-band chart-band--low",
+    margin,
+    plotWidth,
+    scaleY,
+  );
+  appendConsumptionChartBand(
+    bands,
+    Math.max(LOW_CONSUMPTION_LIMIT_L_PER_100_KM, yDomain.min),
+    Math.min(HIGH_CONSUMPTION_LIMIT_L_PER_100_KM, yDomain.max),
+    "chart-band chart-band--medium",
+    margin,
+    plotWidth,
+    scaleY,
+  );
+  appendConsumptionChartBand(
+    bands,
+    Math.max(HIGH_CONSUMPTION_LIMIT_L_PER_100_KM, yDomain.min),
+    yDomain.max,
+    "chart-band chart-band--high",
+    margin,
+    plotWidth,
+    scaleY,
+  );
 
   const grid = createSvgElement("g", { class: "chart-grid", "aria-hidden": "true" });
-  const yTickCount = 4;
-
-  for (let index = 0; index <= yTickCount; index += 1) {
-    const value = yDomain.min + ((yDomain.max - yDomain.min) * index) / yTickCount;
+  for (
+    let value = yDomain.min;
+    value <= yDomain.max;
+    value += CONSUMPTION_CHART_Y_INTERVAL_LITERS
+  ) {
     const y = scaleY(value);
     grid.append(
       createSvgElement("line", {
@@ -796,9 +847,11 @@ function renderConsumptionChart() {
     );
   }
 
-  const xTickCount = 4;
-  for (let index = 0; index <= xTickCount; index += 1) {
-    const distanceKm = (totalDistanceKm * index) / xTickCount;
+  for (
+    let distanceKm = 0;
+    distanceKm <= xDomainMaxKm;
+    distanceKm += CONSUMPTION_CHART_X_INTERVAL_KM
+  ) {
     const x = scaleX(distanceKm);
     grid.append(
       createSvgElement("line", {
@@ -885,32 +938,67 @@ function renderConsumptionChart() {
   elements.consumptionChart.replaceChildren(
     title,
     description,
+    bands,
     grid,
     axisLabels,
     averageLine,
     consumptionPath,
     points,
   );
+}
 
-  const latestConsumption = consumptionValues.at(-1);
-  elements.consumptionChartSummary.textContent =
-    `Zuletzt ${formatNumber(latestConsumption, 2)} l / 100\u00a0km auf ` +
-    `${formatNumber(intervals.at(-1).actualDistanceKm, 0)} km. ` +
-    `Gesamtdurchschnitt: ${formatNumber(averageConsumption, 2)} l / 100\u00a0km.`;
+function appendConsumptionChartBand(container, lowerValue, upperValue, className, margin, width, scaleY) {
+  if (upperValue <= lowerValue) {
+    return;
+  }
+
+  container.appendChild(
+    createSvgElement("rect", {
+      class: className,
+      x: margin.left,
+      y: scaleY(upperValue),
+      width,
+      height: scaleY(lowerValue) - scaleY(upperValue),
+    }),
+  );
+}
+
+function showConsumptionChart() {
+  if (elements.openConsumptionChart.disabled) {
+    return;
+  }
+
+  if (typeof elements.consumptionChartDialog.showModal === "function") {
+    elements.consumptionChartDialog.showModal();
+  } else {
+    elements.consumptionChartDialog.setAttribute("open", "");
+  }
+}
+
+function closeConsumptionChart() {
+  if (typeof elements.consumptionChartDialog.close === "function") {
+    elements.consumptionChartDialog.close();
+  } else {
+    elements.consumptionChartDialog.removeAttribute("open");
+  }
+}
+
+function handleConsumptionChartDialogClick(event) {
+  if (event.target === elements.consumptionChartDialog) {
+    closeConsumptionChart();
+  }
 }
 
 function getConsumptionChartYDomain(values) {
   const minimum = Math.min(...values);
   const maximum = Math.max(...values);
-  const spread = Math.max(maximum - minimum, 1);
-  const padding = Math.max(spread * 0.2, 0.5);
-  let domainMin = Math.max(0, Math.floor((minimum - padding) * 2) / 2);
-  let domainMax = Math.ceil((maximum + padding) * 2) / 2;
+  let domainMin = Math.max(0, Math.floor(minimum) - CONSUMPTION_CHART_Y_INTERVAL_LITERS);
+  let domainMax = Math.ceil(maximum) + CONSUMPTION_CHART_Y_INTERVAL_LITERS;
 
-  if (domainMax - domainMin < 2) {
+  if (domainMax - domainMin < CONSUMPTION_CHART_Y_INTERVAL_LITERS * 2) {
     const center = (domainMin + domainMax) / 2;
-    domainMin = Math.max(0, center - 1);
-    domainMax = center + 1;
+    domainMin = Math.max(0, Math.floor(center - CONSUMPTION_CHART_Y_INTERVAL_LITERS));
+    domainMax = Math.ceil(center + CONSUMPTION_CHART_Y_INTERVAL_LITERS);
   }
 
   return { min: domainMin, max: domainMax };
@@ -1058,11 +1146,11 @@ function getConsumptionClassName(interval) {
 
   const consumptionLPer100Km = interval.consumptionLPerKm * 100;
 
-  if (consumptionLPer100Km < 14) {
+  if (consumptionLPer100Km < LOW_CONSUMPTION_LIMIT_L_PER_100_KM) {
     return "history-item--consumption-low";
   }
 
-  if (consumptionLPer100Km < 15) {
+  if (consumptionLPer100Km < HIGH_CONSUMPTION_LIMIT_L_PER_100_KM) {
     return "history-item--consumption-medium";
   }
 

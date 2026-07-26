@@ -54,6 +54,34 @@
       </div>
     </section>
 
+    <section class="panel">
+      <div class="section-heading">
+        <h2>Verbrauchsentwicklung</h2>
+        <p>Die Breite jedes Abschnitts entspricht der tatsächlich gefahrenen Strecke.</p>
+      </div>
+
+      <div id="consumption-chart-empty" class="empty-state">
+        Die Grafik erscheint nach dem zweiten Volltankvorgang.
+      </div>
+
+      <div class="consumption-chart-region" id="consumption-chart-region" hidden>
+        <div class="chart-legend" aria-hidden="true">
+          <span><i class="chart-legend-line chart-legend-line--consumption"></i>Verbrauch je Strecke</span>
+          <span><i class="chart-legend-line chart-legend-line--average"></i>Gesamtdurchschnitt</span>
+        </div>
+        <div class="consumption-chart-scroll">
+          <svg
+            class="consumption-chart"
+            id="consumption-chart"
+            viewBox="0 0 720 360"
+            role="img"
+            aria-labelledby="consumption-chart-title consumption-chart-description"
+          ></svg>
+        </div>
+        <p class="chart-summary" id="consumption-chart-summary"></p>
+      </div>
+    </section>
+
     <section class="panel panel-form">
       <div class="section-heading">
         <h2>Neuer Volltankvorgang</h2>

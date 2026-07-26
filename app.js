@@ -33,6 +33,7 @@ const elements = {
   importFile: document.getElementById("import-file"),
   refreshApp: document.getElementById("refresh-app"),
   appVersion: document.getElementById("app-version"),
+  updateStatus: document.getElementById("update-status"),
   formMessage: document.getElementById("form-message"),
   historyEmpty: document.getElementById("history-empty"),
   historyList: document.getElementById("history-list"),
@@ -64,7 +65,7 @@ let waitingServiceWorker = null;
 let serviceWorkerRegistration = null;
 let currentAppVersion = APP_VERSION_FALLBACK;
 let availableAppVersion = null;
-let updateButtonResetTimeout = null;
+let updateStatusResetTimeout = null;
 let isApplyingAppUpdate = false;
 let odometerPhotoMode = "entry";
 
@@ -331,7 +332,7 @@ function deleteEntry(entryId) {
 }
 
 async function handleRefreshApp() {
-  clearTimeout(updateButtonResetTimeout);
+  clearTimeout(updateStatusResetTimeout);
 
   if (waitingServiceWorker) {
     activateWaitingServiceWorker();
@@ -343,7 +344,8 @@ async function handleRefreshApp() {
     return;
   }
 
-  setUpdateButtonState("Prüfe …", true);
+  setUpdateButtonState(UPDATE_BUTTON_DEFAULT_TEXT, true);
+  setUpdateStatus("Prüfe auf neue Version …");
 
   try {
     const response = await fetch(`./version.json?check=${Date.now()}`, { cache: "no-store" });
@@ -370,14 +372,17 @@ async function handleRefreshApp() {
     }
 
     if (remoteVersion === currentAppVersion) {
-      showTemporaryUpdateButtonState("Version ist aktuell");
+      setUpdateButtonState(UPDATE_BUTTON_DEFAULT_TEXT);
+      showTemporaryUpdateStatus("Die App ist aktuell.");
       return;
     }
 
     availableAppVersion = remoteVersion;
+    setUpdateStatus("Neue Version verfügbar.");
     setUpdateButtonState("Neue Version laden");
   } catch {
-    showTemporaryUpdateButtonState("Keine Verbindung");
+    setUpdateButtonState(UPDATE_BUTTON_DEFAULT_TEXT);
+    showTemporaryUpdateStatus("Keine Verbindung.");
   }
 }
 
@@ -742,10 +747,15 @@ function setUpdateButtonState(text, disabled = false) {
   elements.refreshApp.disabled = disabled;
 }
 
-function showTemporaryUpdateButtonState(text) {
-  setUpdateButtonState(text, true);
-  updateButtonResetTimeout = window.setTimeout(() => {
-    setUpdateButtonState(UPDATE_BUTTON_DEFAULT_TEXT);
+function setUpdateStatus(text) {
+  elements.updateStatus.textContent = text;
+  elements.updateStatus.hidden = !text;
+}
+
+function showTemporaryUpdateStatus(text) {
+  setUpdateStatus(text);
+  updateStatusResetTimeout = window.setTimeout(() => {
+    setUpdateStatus("");
   }, 2500);
 }
 
@@ -1515,7 +1525,8 @@ function getTodayIsoDate() {
 
 async function initializeServiceWorker() {
   if (!("serviceWorker" in navigator)) {
-    setUpdateButtonState("Updates nicht unterstützt", true);
+    setUpdateButtonState(UPDATE_BUTTON_DEFAULT_TEXT, true);
+    setUpdateStatus("Update-Prüfung nicht unterstützt.");
     return;
   }
 
@@ -1527,7 +1538,8 @@ async function initializeServiceWorker() {
 
     observeServiceWorkerRegistration(serviceWorkerRegistration);
   } catch {
-    setUpdateButtonState("Updates nicht verfügbar", true);
+    setUpdateButtonState(UPDATE_BUTTON_DEFAULT_TEXT, true);
+    setUpdateStatus("Update-Prüfung nicht verfügbar.");
   }
 }
 
@@ -1568,18 +1580,22 @@ function observeInstallingServiceWorker(registration, installingWorker) {
 }
 
 function markServiceWorkerUpdateAvailable(worker) {
+  clearTimeout(updateStatusResetTimeout);
   waitingServiceWorker = worker;
+  setUpdateStatus("Neue Version verfügbar.");
   setUpdateButtonState("Neue Version laden");
 }
 
 function activateWaitingServiceWorker() {
   isApplyingAppUpdate = true;
-  setUpdateButtonState("Neue Version wird geladen …", true);
+  setUpdateStatus("Neue Version wird geladen …");
+  setUpdateButtonState("Neue Version laden", true);
   waitingServiceWorker.postMessage({ type: "SKIP_WAITING" });
 }
 
 async function loadAvailableAppVersion() {
-  setUpdateButtonState("Neue Version wird geladen …", true);
+  setUpdateStatus("Neue Version wird geladen …");
+  setUpdateButtonState("Neue Version laden", true);
 
   try {
     const registration = serviceWorkerRegistration || await navigator.serviceWorker.getRegistration();
@@ -1605,7 +1621,8 @@ async function loadAvailableAppVersion() {
     window.location.reload();
   } catch {
     availableAppVersion = null;
-    showTemporaryUpdateButtonState("Update fehlgeschlagen");
+    setUpdateButtonState(UPDATE_BUTTON_DEFAULT_TEXT);
+    showTemporaryUpdateStatus("Update fehlgeschlagen.");
   }
 }
 

@@ -380,9 +380,19 @@ input[type="date"] {
   margin-top: 18px;
 }
 
+.app-meta-copy {
+  display: grid;
+  gap: 3px;
+}
+
 .app-version {
   color: var(--muted);
   font-size: 0.9rem;
+}
+
+.update-status {
+  color: var(--muted);
+  font-size: 0.85rem;
 }
 
 .stat-card {
